@@ -46,26 +46,27 @@ export async function POST(request: Request) {
   const data = parsed.data;
 
   const resume = data.isDefault
-    ? await prisma.$transaction(async (transaction) => {
-        await transaction.resume.updateMany({
-          where: {
-            userId,
-            isDefault: true,
-          },
-          data: {
-            isDefault: false,
-          },
-        });
-
-        return transaction.resume.create({
-          data: {
-            userId,
-            title: data.title,
-            content: data.content,
-            isDefault: data.isDefault,
-          },
-        });
-      })
+    ? (
+        await prisma.$transaction([
+          prisma.resume.updateMany({
+            where: {
+              userId,
+              isDefault: true,
+            },
+            data: {
+              isDefault: false,
+            },
+          }),
+          prisma.resume.create({
+            data: {
+              userId,
+              title: data.title,
+              content: data.content,
+              isDefault: data.isDefault,
+            },
+          }),
+        ])
+      )[1]
     : await prisma.resume.create({
         data: {
           userId,
