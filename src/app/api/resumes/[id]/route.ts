@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
+import { Prisma } from '@prisma/client';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { updateResumeSchema } from '@/lib/validations';
@@ -91,7 +92,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   }
 
   const resume = shouldSetDefault
-    ? await prisma.$transaction(async (transaction) => {
+    ? await prisma.$transaction(async (transaction: Prisma.TransactionClient) => {
         await transaction.resume.updateMany({
           where: {
             userId,
