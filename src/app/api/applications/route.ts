@@ -56,6 +56,7 @@ export async function POST(request: Request) {
 
   const data = parsed.data;
   const companyId = data.companyId ?? null;
+  const appliedDateValue = data.appliedDate;
 
   if (companyId) {
     const company = await prisma.company.findFirst({
@@ -78,7 +79,12 @@ export async function POST(request: Request) {
       jobUrl: data.jobUrl ?? null,
       description: data.description ?? null,
       status: data.status,
-      appliedDate: parseDate(data.appliedDate),
+      appliedDate:
+        appliedDateValue === undefined || appliedDateValue === null
+          ? null
+          : appliedDateValue instanceof Date || typeof appliedDateValue === 'string'
+            ? parseDate(appliedDateValue)
+            : null,
       notes: data.notes ?? null,
     },
     include: {
