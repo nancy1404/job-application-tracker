@@ -1,0 +1,182 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ApplicationStatus {
+  SAVED
+  APPLIED
+  INTERVIEW
+  OFFER
+  REJECTED
+  ARCHIVED
+}
+
+enum ReminderStatus {
+  PENDING
+  COMPLETED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts     Account[]
+  sessions     Session[]
+  resumes      Resume[]
+  companies    Company[]
+  applications JobApplication[]
+  reminders    Reminder[]
+  aiInsights   AiInsight[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@id([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Resume {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String   @default("Untitled Resume")
+  content   String   @db.Text
+  /// Application logic should ensure only one default resume per user.
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aiInsights AiInsight[]
+
+  @@index([userId, createdAt])
+  @@map("resumes")
+}
+
+model Company {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  website   String?
+  location  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applications JobApplication[]
+
+  @@unique([userId, name])
+  @@index([userId, name])
+  @@map("companies")
+}
+
+model JobApplication {
+  id          String            @id @default(cuid())
+  userId      String
+  companyId   String?
+  title       String
+  jobUrl      String?
+  description String?           @db.Text
+  status      ApplicationStatus @default(SAVED)
+  appliedDate DateTime?
+  notes       String?           @db.Text
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company    Company?    @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  aiInsights AiInsight[]
+  reminders  Reminder[]
+
+  @@index([userId, status])
+  @@index([userId, createdAt])
+  @@map("job_applications")
+}
+
+model Reminder {
+  id            String         @id @default(cuid())
+  userId        String
+  applicationId String?
+  title         String
+  dueDate       DateTime
+  status        ReminderStatus @default(PENDING)
+  notes         String?        @db.Text
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  application JobApplication? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status, dueDate])
+  @@map("reminders")
+}
+
+model AiInsight {
+  id            String   @id @default(cuid())
+  userId        String
+  applicationId String
+  resumeId      String
+  /// Application code should validate matchScore as an integer from 0 to 100 using Zod.
+  matchScore    Int
+  summary       String?  @db.Text
+  strengths     Json?
+  gaps          Json?
+  suggestions   Json?
+  rawResponse   Json?
+  modelName     String?
+  generatedAt   DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  application JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  resume      Resume         @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  @@unique([applicationId, resumeId])
+  @@index([userId, applicationId])
+  @@map("ai_insights")
+}
