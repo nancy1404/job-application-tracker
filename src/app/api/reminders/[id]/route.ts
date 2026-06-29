@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
+import { ReminderStatus } from '@prisma/client';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { updateReminderSchema } from '@/lib/validations';
@@ -96,33 +97,47 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     return jsonError('Reminder not found', 404);
   }
 
-  const data = parsed.data;
+  const data = parsed.data as Record<string, unknown>;
   const updateData: {
     title?: string;
     dueDate?: Date;
-    status?: 'PENDING' | 'COMPLETED';
+    status?: ReminderStatus;
     notes?: string | null;
     applicationId?: string | null;
   } = {};
 
   if (hasOwnProperty(body, 'title')) {
-    updateData.title = data.title;
+    if (typeof data.title === 'string') {
+      updateData.title = data.title;
+    }
   }
 
   if (hasOwnProperty(body, 'dueDate')) {
-    updateData.dueDate = parseDate(data.dueDate) ?? new Date(data.dueDate as string);
+    if (data.dueDate instanceof Date || typeof data.dueDate === 'string') {
+      const parsedDueDate = parseDate(data.dueDate);
+
+      if (parsedDueDate) {
+        updateData.dueDate = parsedDueDate;
+      }
+    }
   }
 
   if (hasOwnProperty(body, 'status')) {
-    updateData.status = data.status;
+    if (typeof data.status === 'string' && Object.values(ReminderStatus).includes(data.status as ReminderStatus)) {
+      updateData.status = data.status as ReminderStatus;
+    }
   }
 
   if (hasOwnProperty(body, 'notes')) {
-    updateData.notes = data.notes ?? null;
+    if (typeof data.notes === 'string') {
+      updateData.notes = data.notes;
+    } else if (data.notes === null) {
+      updateData.notes = null;
+    }
   }
 
   if (hasOwnProperty(body, 'applicationId')) {
-    if (data.applicationId) {
+    if (typeof data.applicationId === 'string') {
       const application = await validateApplicationOwnership(data.applicationId, userId);
 
       if (!application) {
@@ -130,7 +145,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       }
 
       updateData.applicationId = data.applicationId;
-    } else {
+    } else if (data.applicationId === null || data.applicationId === undefined) {
       updateData.applicationId = null;
     }
   }
