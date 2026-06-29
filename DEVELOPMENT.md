@@ -3,8 +3,8 @@
 ## Prerequisites
 - Node.js 20+
 - npm or pnpm
-- A Neon PostgreSQL database (when ready)
-- An OpenAI API key (for AI insights)
+- A Neon PostgreSQL database
+- An OpenAI API key (optional for local development)
 - A Vercel account for deployment
 
 ## Local Setup
@@ -23,15 +23,16 @@
 Create the following values in your environment:
 
 ```env
-DATABASE_URL=your-placeholder-or-neon-url
+DATABASE_URL=your-neon-url
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your-random-secret
 OPENAI_API_KEY=your-openai-key
-AUTH_SECRET=your-random-secret
-AUTH_URL=http://localhost:3000
 ```
 
-> This project uses `AUTH_SECRET` and `AUTH_URL` consistently for Auth.js. Older examples may mention `NEXTAUTH_SECRET` and `NEXTAUTH_URL`, but this project should use `AUTH_SECRET` and `AUTH_URL` unless the auth setup changes.
->
-> The project is currently ready for Prisma setup and local validation. A real Neon `DATABASE_URL` is still required before running migration or database-dependent commands.
+Notes:
+- `OPENAI_API_KEY` is optional if you are not testing AI generation.
+- Without `OPENAI_API_KEY`, AI insight generation returns `OPENAI_API_KEY is not configured.` while the rest of the app remains usable.
+- Never commit `.env`.
 
 ## Prisma 7 Setup Notes
 This project uses Prisma 7 and a separate Prisma config file:
@@ -41,16 +42,12 @@ This project uses Prisma 7 and a separate Prisma config file:
 The Prisma schema uses `@@map` for tables, while the actual column names remain camelCase unless `@map` is added.
 
 ### Prisma commands
-Run these without a real database URL for local validation:
+Core commands:
 ```bash
 npx prisma validate
 npx prisma format
 npx prisma generate
-```
-
-Once a real Neon database URL is available, run:
-```bash
-npx prisma migrate dev --name init
+npx prisma migrate dev
 ```
 
 Other database-dependent commands:
@@ -69,12 +66,20 @@ npx prisma studio
 ## Local Development
 Start the app locally:
 ```bash
+npm install
+cp .env.example .env
 npx prisma generate
+npx prisma migrate dev
 npm run dev
 ```
 
 Then open:
 - http://localhost:3000
+
+Build check:
+```bash
+npm run build
+```
 
 ## Testing Strategy
 Recommended checks during development:
@@ -97,9 +102,9 @@ npm run build
 3. Import the repository.
 4. Add environment variables in Vercel:
    - `DATABASE_URL`
+   - `NEXTAUTH_URL`
+   - `NEXTAUTH_SECRET`
    - `OPENAI_API_KEY`
-   - `AUTH_SECRET`
-   - `AUTH_URL`
 5. Trigger a deployment.
 6. Verify auth, database access, and AI route behavior in production.
 

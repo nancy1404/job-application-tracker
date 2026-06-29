@@ -1,79 +1,50 @@
 # API Specification
 
 ## Overview
-This project uses Next.js Route Handlers for backend logic. The API is REST-style and is designed for an authenticated single-user MVP.
+The backend uses Next.js Route Handlers. All user data routes are ownership-scoped: a signed-in user can only read and mutate their own records.
 
 ## Authentication
-All protected endpoints require an active Auth.js session. Requests without a valid session should return `401 Unauthorized`.
+- Auth route: `/api/auth/[...nextauth]` (NextAuth v4)
+- Custom signup route: `POST /api/auth/signup`
+- Protected routes return `401` when no valid session exists.
 
-Auth.js handles sign-in, sign-out, and session management through its configured route handler, typically `/api/auth/[...nextauth]`. If you implement a custom credentials signup flow, a custom route such as `POST /api/auth/signup` may be used.
-
-## Conventions
-- JSON request and response bodies
-- Standard success responses return `200` or `201`
-- Validation failures return `400`
-- Not found returns `404`
-- Unauthorized returns `401`
-- Server errors return `500`
+## Response Conventions
+- `200` for successful reads/updates/deletes
+- `201` for successful creates
+- `400` for validation errors
+- `401` for unauthenticated requests
+- `404` for missing or unauthorized resource references
+- `409` for unique constraint conflicts (example: duplicate company name)
+- `500` for unexpected server errors
 
 ---
 
 ## Auth Endpoints
 
 ### POST /api/auth/signup
-Create a new user account when a custom credentials signup flow is implemented.
+Create a credentials user.
 
 Request body:
 ```json
 {
-  "email": "student@example.com",
-  "password": "securepassword"
+  "name": "Alex",
+  "email": "alex@example.com",
+  "password": "password123"
 }
 ```
 
-Success response:
-```json
-{
-  "user": {
-    "id": "clx123",
-    "email": "student@example.com"
-  }
-}
-```
-
-Auth.js handles sign-in, sign-out, and session management through its configured route handler, typically `/api/auth/[...nextauth]`. In most setups, you do not manually implement `POST /api/auth/signin`, `POST /api/auth/signout`, or `GET /api/auth/session` as custom routes.
+### /api/auth/[...nextauth]
+NextAuth v4 route handler for credentials sign-in/sign-out/session.
 
 ---
 
-## Applications Endpoints
+## Applications
 
 ### GET /api/applications
-Return all applications for the authenticated user.
-
-Query params:
-- `status` optional
-- `search` optional
-
-Success response:
-```json
-[
-  {
-    "id": "app_1",
-    "title": "Frontend Developer",
-    "companyId": "cmp_1",
-    "jobUrl": "https://example.com/jobs/1",
-    "description": "Build UI components for a SaaS product.",
-    "status": "APPLIED",
-    "appliedDate": "2026-06-20T10:00:00.000Z",
-    "notes": "Follow up next week.",
-    "createdAt": "2026-06-20T10:00:00.000Z",
-    "updatedAt": "2026-06-20T10:00:00.000Z"
-  }
-]
-```
+Return current user's applications.
 
 ### POST /api/applications
-Create a new application.
+Create an application for current user.
 
 Request body:
 ```json
@@ -88,33 +59,24 @@ Request body:
 }
 ```
 
-Validation rules:
-- `title` is required
-- `status` must be one of: `SAVED`, `APPLIED`, `INTERVIEW`, `OFFER`, `REJECTED`, `ARCHIVED`
-- `description` is optional in v1, but required for AI insight generation
-
 ### GET /api/applications/[id]
-Return one application by ID.
+Return one user-owned application.
 
 ### PATCH /api/applications/[id]
-Update an existing application.
+Update one user-owned application.
 
 ### DELETE /api/applications/[id]
-Delete an application.
-
-Behavior:
-- Related `AiInsight` rows are deleted by cascade.
-- Related `Reminder` rows are kept but detached because `applicationId` uses `onDelete: SetNull`.
+Delete one user-owned application.
 
 ---
 
-## Companies Endpoints
+## Companies
 
 ### GET /api/companies
-Return companies for the current user.
+Return current user's companies.
 
 ### POST /api/companies
-Create a new company.
+Create a company for current user.
 
 Request body:
 ```json
@@ -127,151 +89,97 @@ Request body:
 
 ---
 
-## Resumes Endpoints
+## Resumes
 
 ### GET /api/resumes
-Return all saved resumes for the current user.
+Return current user's resumes.
 
 ### POST /api/resumes
-Create a new resume version.
+Create a resume for current user.
 
 Request body:
 ```json
 {
   "title": "Resume - June 2026",
-  "content": "Experienced frontend developer with React and TypeScript experience.",
+  "content": "Experienced frontend developer...",
   "isDefault": true
 }
 ```
 
-Validation rules:
-- `content` is required
-- `isDefault` is boolean
-- Application logic should enforce only one default resume per user
+Behavior:
+- If `isDefault=true`, other user resumes are unset so only one default resume remains.
+
+### GET /api/resumes/[id]
+Return one user-owned resume.
 
 ### PATCH /api/resumes/[id]
-Update a resume.
+Update one user-owned resume.
+
+### DELETE /api/resumes/[id]
+Delete one user-owned resume.
 
 ---
 
-## Reminders Endpoints
+## Reminders
 
 ### GET /api/reminders
-Return reminders for the authenticated user.
+Return current user's reminders.
 
 ### POST /api/reminders
-Create a reminder.
+Create a reminder for current user.
 
 Request body:
 ```json
 {
   "title": "Follow up with recruiter",
   "dueDate": "2026-06-25T09:00:00.000Z",
+  "status": "PENDING",
   "notes": "Send a thank-you note.",
   "applicationId": "app_1"
 }
 ```
 
+Behavior:
+- If `applicationId` is provided, the application must belong to the current user.
+
+### GET /api/reminders/[id]
+Return one user-owned reminder.
+
 ### PATCH /api/reminders/[id]
-Mark a reminder as completed or update its fields.
+Update one user-owned reminder.
 
 ### DELETE /api/reminders/[id]
-Delete a reminder.
+Delete one user-owned reminder.
 
 ---
 
-## AI Insight Endpoints
+## AI Insights
 
-### POST /api/applications/[applicationId]/insights
-Generate AI match insights for a selected application and resume.
+### POST /api/ai-insights
+Generate and upsert an AI match insight for `(applicationId, resumeId)`.
 
 Request body:
 ```json
 {
+  "applicationId": "app_1",
   "resumeId": "resume_1"
 }
 ```
 
-Validation rules:
-- `resumeId` is required
-- The application must have a non-empty job description
-- The route should reject the request if the application description is missing
-- `AiInsight` is unique per application/resume pair
+Behavior:
+- Requires ownership of both application and resume.
+- Uses OpenAI through `src/lib/ai.ts`.
+- Upserts `AiInsight` using unique `(applicationId, resumeId)`.
+- Returns `matchScore`, `summary`, `strengths`, `gaps`, `suggestions` in saved JSON fields.
 
-Success response:
-```json
-{
-  "id": "insight_1",
-  "applicationId": "app_1",
-  "resumeId": "resume_1",
-  "matchScore": 86,
-  "summary": "Strong frontend fit with a few gaps in backend experience.",
-  "strengths": ["React", "TypeScript", "UI systems"],
-  "gaps": ["Node.js", "API design"],
-  "suggestions": ["Highlight backend projects", "Add more API examples"],
-  "modelName": "gpt-4o-mini",
-  "generatedAt": "2026-06-20T10:00:00.000Z"
-}
-```
-
-### GET /api/applications/[applicationId]/insights?resumeId=...
-Return the saved AI insight for a specific application and resume if one exists.
+If `OPENAI_API_KEY` is missing:
+- Returns a safe `500` error: `OPENAI_API_KEY is not configured.`
 
 ---
 
-## Dashboard Analytics Endpoints
-
-### GET /api/analytics/dashboard
-Return summary data for the dashboard.
-
-Success response:
-```json
-{
-  "totalApplications": 8,
-  "applicationsByStatus": {
-    "SAVED": 2,
-    "APPLIED": 4,
-    "INTERVIEW": 1,
-    "OFFER": 0,
-    "REJECTED": 1,
-    "ARCHIVED": 0
-  },
-  "upcomingReminders": 3,
-  "recentActivity": [
-    {
-      "type": "application",
-      "title": "Frontend Developer",
-      "createdAt": "2026-06-20T10:00:00.000Z"
-    }
-  ]
-}
-```
-
----
-
-## Error Handling
-Common error responses:
-```json
-{
-  "error": "Validation failed",
-  "details": [
-    {
-      "field": "title",
-      "message": "Title is required"
-    }
-  ]
-}
-```
-
-Other errors:
-- `401` for missing authentication
-- `404` for missing resources
-- `400` for invalid payloads
-- `500` for unexpected server failures
-
----
-
-## Validation Notes
-- All request bodies should be validated with Zod.
-- AI insight generation should validate that the job description exists before calling OpenAI.
-- `matchScore` should be validated as an integer between 0 and 100 in application code.
+## Ownership Checks
+- Applications: user-scoped
+- Companies: user-scoped
+- Resumes: user-scoped
+- Reminders: user-scoped
+- AI insight source entities (application/resume): user-scoped
