@@ -2,3 +2,7 @@
 .env.local
 node_modules
 .nexttsconfig.tsbuildinfo
+
+# Build cache
+.next/
+tsconfig.tsbuildinfo
