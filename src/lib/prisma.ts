@@ -6,11 +6,19 @@ const databaseUrl = process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@
 
 process.env.DATABASE_URL = databaseUrl;
 
-export const prisma = globalForPrisma.prisma ?? new PrismaClient();
+function getPrismaClient() {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = new PrismaClient();
+  }
 
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma;
+  return globalForPrisma.prisma;
 }
+
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, prop) {
+    return getPrismaClient()[prop as keyof PrismaClient];
+  },
+});
 
 export type UserRecord = Prisma.UserGetPayload<{}>;
 export type ResumeRecord = Prisma.ResumeGetPayload<{}>;
