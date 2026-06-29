@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { Prisma } from '@prisma/client';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { updateResumeSchema } from '@/lib/validations';
@@ -92,27 +91,28 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   }
 
   const resume = shouldSetDefault
-    ? await prisma.$transaction(async (transaction: Prisma.TransactionClient) => {
-        await transaction.resume.updateMany({
-          where: {
-            userId,
-            isDefault: true,
-            id: {
-              not: params.id,
+    ? (
+        await prisma.$transaction([
+          prisma.resume.updateMany({
+            where: {
+              userId,
+              isDefault: true,
+              id: {
+                not: params.id,
+              },
             },
-          },
-          data: {
-            isDefault: false,
-          },
-        });
-
-        return transaction.resume.update({
-          where: {
-            id: params.id,
-          },
-          data: updateData,
-        });
-      })
+            data: {
+              isDefault: false,
+            },
+          }),
+          prisma.resume.update({
+            where: {
+              id: params.id,
+            },
+            data: updateData,
+          }),
+        ])
+      )[1]
     : await prisma.resume.update({
         where: {
           id: params.id,
