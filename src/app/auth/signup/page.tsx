@@ -1,13 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import Link from 'next/link';
 import { PageHeader } from '@/components/layout/page-header';
 
-export default function SignInPage() {
+export default function SignUpPage() {
   const router = useRouter();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -18,29 +18,43 @@ export default function SignInPage() {
     setError('');
     setIsSubmitting(true);
 
-    const result = await signIn('credentials', {
-      email,
-      password,
-      redirect: false,
-      callbackUrl: '/dashboard',
+    const response = await fetch('/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password }),
     });
 
     setIsSubmitting(false);
 
-    if (result?.error) {
-      setError('Invalid email or password.');
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      setError(data.error ?? 'Signup failed.');
       return;
     }
 
-    router.push('/dashboard');
+    router.push('/auth/signin');
   }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
       <div className="w-full max-w-md rounded-xl border bg-white p-8 shadow-sm">
-        <PageHeader title="Sign in" description="Use your credentials to continue." />
+        <PageHeader title="Create account" description="Sign up with your email and password." />
 
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="name">
+              Name
+            </label>
+            <input
+              id="name"
+              type="text"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              required
+            />
+          </div>
+
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="email">
               Email
@@ -76,14 +90,14 @@ export default function SignInPage() {
             disabled={isSubmitting}
             className="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {isSubmitting ? 'Signing in...' : 'Sign in'}
+            {isSubmitting ? 'Creating account...' : 'Create account'}
           </button>
         </form>
 
         <p className="mt-4 text-sm text-slate-600">
-          Need an account?{' '}
-          <Link href="/auth/signup" className="font-medium text-slate-900">
-            Sign up
+          Already have an account?{' '}
+          <Link href="/auth/signin" className="font-medium text-slate-900">
+            Sign in
           </Link>
         </p>
       </div>

@@ -1,14 +1,20 @@
 import { PrismaClient, type Prisma } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import pg from 'pg';
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
-const databaseUrl = process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/postgres?sslmode=disable';
+const databaseUrl = process.env.DATABASE_URL;
 
-process.env.DATABASE_URL = databaseUrl;
+if (!databaseUrl) {
+  throw new Error('DATABASE_URL is required to initialize Prisma Client.');
+}
 
 function getPrismaClient() {
   if (!globalForPrisma.prisma) {
-    globalForPrisma.prisma = new PrismaClient();
+    const pool = new pg.Pool({ connectionString: databaseUrl });
+    const adapter = new PrismaPg(pool);
+    globalForPrisma.prisma = new PrismaClient({ adapter });
   }
 
   return globalForPrisma.prisma;

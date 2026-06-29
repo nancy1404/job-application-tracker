@@ -5,6 +5,21 @@ import { getUserByEmail } from '@/lib/prisma';
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: 'jwt' },
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user?.id) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        const typedSession = session as typeof session & { user: { id?: string } };
+        typedSession.user.id = token.id as string | undefined;
+      }
+      return session;
+    },
+  },
   providers: [
     Credentials({
       name: 'Credentials',
