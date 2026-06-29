@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { ReminderStatus } from '@prisma/client';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { updateReminderSchema } from '@/lib/validations';
+
+const REMINDER_STATUSES = ['PENDING', 'COMPLETED'] as const;
+type ReminderStatusValue = (typeof REMINDER_STATUSES)[number];
 
 type RouteContext = {
   params: {
@@ -101,7 +103,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   const updateData: {
     title?: string;
     dueDate?: Date;
-    status?: ReminderStatus;
+    status?: ReminderStatusValue;
     notes?: string | null;
     applicationId?: string | null;
   } = {};
@@ -123,8 +125,11 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   }
 
   if (hasOwnProperty(body, 'status')) {
-    if (typeof data.status === 'string' && Object.values(ReminderStatus).includes(data.status as ReminderStatus)) {
-      updateData.status = data.status as ReminderStatus;
+    if (
+      typeof data.status === 'string' &&
+      REMINDER_STATUSES.includes(data.status as ReminderStatusValue)
+    ) {
+      updateData.status = data.status as ReminderStatusValue;
     }
   }
 
