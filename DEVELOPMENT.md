@@ -122,6 +122,55 @@ Production notes:
 - Signup/signin is tested in production.
 - Applications/resumes/reminders flows are tested in production.
 
+## Final Smoke Test Checklist
+
+### Core run/build check
+- Run `npm run build` and confirm it passes.
+
+### Authentication checks
+- Signup: create a new user at `/auth/signup`.
+- Signin: sign in with that user at `/auth/signin`.
+
+### Dashboard checks
+- Open `/dashboard` and verify summary cards populate (applications, resumes, reminders).
+
+### Applications checks
+- Create an application from `/applications`.
+- Edit the same application and verify fields update.
+- Delete an application and verify it is removed.
+- In the application form, enter a new company name and verify company creation works through the form flow.
+
+### Resumes checks
+- Create a resume at `/resumes`.
+- Edit a resume and verify updates persist.
+- Delete a resume and verify removal.
+- Mark one resume as default and verify only one default resume exists at a time.
+
+### Reminders checks
+- Create a reminder with no linked application.
+- Create a reminder linked to an application.
+- Edit a reminder and verify updates persist.
+- Delete a reminder and verify removal.
+
+### AI insight checks
+- From `/applications`, click `Generate AI Insight`.
+- With `OPENAI_API_KEY` missing, verify a safe error is shown: `OPENAI_API_KEY is not configured.`
+
+### Database verification
+- Run `npx prisma studio` and verify expected records exist for:
+   - users
+   - companies
+   - job_applications
+   - resumes
+   - reminders
+   - ai_insights (when AI generation has been run)
+
+### Pre-deployment checks
+- Confirm `.env` is not committed.
+- Confirm `.env.example` includes all required variables.
+- Confirm `git status` is clean before deploy.
+- Confirm GitHub Actions workflow exists at `.github/workflows/ci.yml`.
+
 ## Final Buffer / Demo Prep
 The last day of the plan should be used for:
 - final bug fixes
