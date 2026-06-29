@@ -49,6 +49,29 @@ npm run dev
 npm run build
 ```
 
+## Deploy to Vercel
+1. Push the repository to GitHub.
+2. Create a new Vercel project and import this repository.
+3. In Vercel Project Settings, configure environment variables:
+	- `DATABASE_URL`
+	- `NEXTAUTH_URL`
+	- `NEXTAUTH_SECRET`
+	- `OPENAI_API_KEY` (optional)
+4. Use the Neon production connection string for `DATABASE_URL`.
+5. Set `NEXTAUTH_URL` to your deployed Vercel URL (for example, `https://your-app.vercel.app`).
+6. Deploy.
+
+Notes:
+- The app works without `OPENAI_API_KEY`, but real AI insight generation requires it.
+- Never commit `.env`.
+
+## Production Checklist
+- `npm run build` passes locally.
+- Prisma migrations are applied to production (`npx prisma migrate deploy`).
+- Vercel environment variables are configured.
+- Signup/signin is tested on the deployed app.
+- Applications, resumes, and reminders flows are tested on the deployed app.
+
 ## Implemented API Surface
 - `POST /api/auth/signup`
 - `/api/auth/[...nextauth]`

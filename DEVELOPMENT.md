@@ -33,6 +33,8 @@ Notes:
 - `OPENAI_API_KEY` is optional if you are not testing AI generation.
 - Without `OPENAI_API_KEY`, AI insight generation returns `OPENAI_API_KEY is not configured.` while the rest of the app remains usable.
 - Never commit `.env`.
+- In production, set `DATABASE_URL` to your Neon production connection string.
+- In production, set `NEXTAUTH_URL` to your deployed Vercel URL.
 
 ## Prisma 7 Setup Notes
 This project uses Prisma 7 and a separate Prisma config file:
@@ -107,6 +109,18 @@ npm run build
    - `OPENAI_API_KEY`
 5. Trigger a deployment.
 6. Verify auth, database access, and AI route behavior in production.
+
+Production notes:
+- Use your Neon production connection string for `DATABASE_URL`.
+- Set `NEXTAUTH_URL` to your Vercel production domain (for example `https://your-app.vercel.app`).
+- `OPENAI_API_KEY` is optional unless real AI generation is required.
+
+## Production Checklist
+- `npm run build` passes.
+- Prisma migrations are applied to production (`npx prisma migrate deploy`).
+- Vercel environment variables are configured.
+- Signup/signin is tested in production.
+- Applications/resumes/reminders flows are tested in production.
 
 ## Final Buffer / Demo Prep
 The last day of the plan should be used for:
