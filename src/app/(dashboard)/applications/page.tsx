@@ -20,6 +20,14 @@ type Application = {
 
 const statusOptions = ['SAVED', 'APPLIED', 'INTERVIEW', 'OFFER', 'REJECTED', 'ARCHIVED'];
 
+function formatDateForInput(value?: string | null) {
+  if (!value) {
+    return '';
+  }
+
+  return new Date(value).toISOString().slice(0, 10);
+}
+
 export default function ApplicationsPage() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -27,6 +35,7 @@ export default function ApplicationsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [formError, setFormError] = useState('');
+  const [editingApplicationId, setEditingApplicationId] = useState('');
   const [title, setTitle] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [jobUrl, setJobUrl] = useState('');
@@ -108,20 +117,51 @@ export default function ApplicationsPage() {
     return data.company.id;
   }
 
+  function resetForm() {
+    setEditingApplicationId('');
+    setTitle('');
+    setCompanyName('');
+    setJobUrl('');
+    setDescription('');
+    setStatus('SAVED');
+    setAppliedDate('');
+    setNotes('');
+    setFormError('');
+  }
+
+  function startEdit(application: Application) {
+    setEditingApplicationId(application.id);
+    setTitle(application.title);
+    setCompanyName(application.company?.name ?? '');
+    setJobUrl(application.jobUrl ?? '');
+    setDescription(application.description ?? '');
+    setStatus(application.status);
+    setAppliedDate(formatDateForInput(application.appliedDate));
+    setNotes(application.notes ?? '');
+    setFormError('');
+  }
+
+  function cancelEdit() {
+    resetForm();
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError('');
     setIsSubmitting(true);
 
     try {
-      let companyId: string | undefined;
+      let companyId: string | null | undefined;
 
       if (companyName.trim()) {
         companyId = await getOrCreateCompanyId(companyName);
+      } else if (editingApplicationId) {
+        companyId = null;
       }
 
-      const response = await fetch('/api/applications', {
-        method: 'POST',
+      const isEditing = Boolean(editingApplicationId);
+      const response = await fetch(isEditing ? `/api/applications/${editingApplicationId}` : '/api/applications', {
+        method: isEditing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title,
@@ -146,12 +186,42 @@ export default function ApplicationsPage() {
       setStatus('SAVED');
       setAppliedDate('');
       setNotes('');
+      setEditingApplicationId('');
 
       await loadData();
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'Failed to create application.');
+      setFormError(error instanceof Error ? error.message : 'Failed to save application.');
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function deleteApplication(applicationId: string) {
+    const confirmed = window.confirm('Delete this application?');
+
+    if (!confirmed) {
+      return;
+    }
+
+    setLoadError('');
+
+    try {
+      const response = await fetch(`/api/applications/${applicationId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error ?? 'Failed to delete application.');
+      }
+
+      if (editingApplicationId === applicationId) {
+        resetForm();
+      }
+
+      await loadData();
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Failed to delete application.');
     }
   }
 
@@ -165,7 +235,9 @@ export default function ApplicationsPage() {
 
         <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
           <section className="rounded-xl border bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-900">New application</h2>
+            <h2 className="text-lg font-semibold text-slate-900">
+              {editingApplicationId ? 'Edit application' : 'New application'}
+            </h2>
 
             <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -278,8 +350,17 @@ export default function ApplicationsPage() {
                 disabled={isSubmitting}
                 className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {isSubmitting ? 'Creating...' : 'Create application'}
+                {isSubmitting ? (editingApplicationId ? 'Saving...' : 'Creating...') : editingApplicationId ? 'Save changes' : 'Create application'}
               </button>
+              {editingApplicationId ? (
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  className="ml-3 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700"
+                >
+                  Cancel edit
+                </button>
+              ) : null}
             </form>
           </section>
 
@@ -305,6 +386,22 @@ export default function ApplicationsPage() {
                       <p className="text-sm text-slate-600">
                         {application.company?.name ?? 'No company'} · {application.status}
                       </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => startEdit(application)}
+                        className="rounded-md border border-slate-300 px-3 py-1 text-sm text-slate-700"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteApplication(application.id)}
+                        className="rounded-md border border-red-200 px-3 py-1 text-sm text-red-700"
+                      >
+                        Delete
+                      </button>
                     </div>
                   </div>
 
