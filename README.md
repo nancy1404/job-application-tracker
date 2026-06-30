@@ -2,6 +2,12 @@
 
 Full-stack Next.js portfolio project for tracking job applications, managing resume versions, scheduling reminders, and generating AI match insights.
 
+## AI-Assisted Development Workflow
+
+This project was developed as a course-guided capstone inspired by Coursera's "Vibe Coding with GitHub Copilot and AI" by Edureka. It uses a structured AI-assisted workflow with GitHub Copilot Pro, where the development process was broken into small phases with prompts guiding implementation, validation, documentation, CI, and deployment.
+
+See [AI_DEVELOPMENT_PROMPTS.md](./AI_DEVELOPMENT_PROMPTS.md) for the prompt sequence, development phases, and reflection.
+
 ## Current Features
 - Credentials authentication with NextAuth v4 (`/auth/signup`, `/auth/signin`)
 - Applications CRUD (UI + API)
