@@ -224,30 +224,30 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <div className="mx-auto max-w-6xl px-6 py-10">
         {authStatus === 'loading' ? (
-          <p className="mb-4 text-sm text-slate-600">Loading dashboard...</p>
+          <p className="mb-4 text-sm text-slate-600 dark:text-slate-300">Loading dashboard...</p>
         ) : null}
 
         <header className="mb-8">
-          <p className="text-sm font-medium text-slate-600">Hello, {greetingTarget}</p>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Dashboard</h1>
-          <p className="mt-1 text-sm text-slate-500">{todayLabel}</p>
-          <p className="mt-2 text-sm text-slate-600">Here’s your opportunity activity for today.</p>
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Hello, {greetingTarget}</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Dashboard</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{todayLabel}</p>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Here’s your opportunity activity for today.</p>
         </header>
 
-        {isLoading ? <p className="text-sm text-slate-600">Loading dashboard...</p> : null}
+        {isLoading ? <p className="text-sm text-slate-600 dark:text-slate-300">Loading dashboard...</p> : null}
         {loadError ? <p className="text-sm text-red-600">{loadError}</p> : null}
 
         {!isLoading && !loadError ? (
           <>
             <div className="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              <div className="rounded-xl border bg-white p-5 shadow-sm">
-                <p className="text-sm text-slate-500">Total opportunities</p>
-                <p className="mt-2 text-3xl font-semibold text-slate-900">{applications.length}</p>
+              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <p className="text-sm text-slate-500 dark:text-slate-400">Total opportunities</p>
+                <p className="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">{applications.length}</p>
               </div>
 
-              <div className="rounded-xl border bg-white p-5 shadow-sm">
-                <p className="text-sm text-slate-500">Applications by status</p>
-                <div className="mt-3 space-y-1 text-sm text-slate-700">
+              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <p className="text-sm text-slate-500 dark:text-slate-400">Status summary (current stage)</p>
+                <div className="mt-3 space-y-1 text-sm text-slate-700 dark:text-slate-200">
                   {statusOptions.map((status) => (
                     <div key={status} className="flex items-center justify-between gap-3">
                       <span>{status}</span>
@@ -257,27 +257,27 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="rounded-xl border bg-white p-5 shadow-sm">
-                <p className="text-sm text-slate-500">Total resumes</p>
-                <p className="mt-2 text-3xl font-semibold text-slate-900">{resumes.length}</p>
-                <p className="mt-2 text-sm text-slate-600">
+              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <p className="text-sm text-slate-500 dark:text-slate-400">Total resumes</p>
+                <p className="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">{resumes.length}</p>
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
                   Default resume: {defaultResume ? defaultResume.title : 'None'}
                 </p>
               </div>
 
-              <div className="rounded-xl border bg-white p-5 shadow-sm">
-                <p className="text-sm text-slate-500">Pending reminders</p>
-                <p className="mt-2 text-3xl font-semibold text-slate-900">{pendingReminders.length}</p>
+              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <p className="text-sm text-slate-500 dark:text-slate-400">Pending reminders</p>
+                <p className="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">{pendingReminders.length}</p>
               </div>
 
-              <div className="rounded-xl border bg-white p-5 shadow-sm">
-                <p className="text-sm text-slate-500">Upcoming reminders</p>
-                <p className="mt-2 text-3xl font-semibold text-slate-900">{upcomingReminders.length}</p>
+              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <p className="text-sm text-slate-500 dark:text-slate-400">Upcoming reminders</p>
+                <p className="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">{upcomingReminders.length}</p>
               </div>
 
-              <div className="rounded-xl border bg-white p-5 shadow-sm">
-                <p className="text-sm text-slate-500">Quick links</p>
-                <div className="mt-3 flex flex-col gap-2 text-sm font-medium text-slate-900">
+              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <p className="text-sm text-slate-500 dark:text-slate-400">Quick links</p>
+                <div className="mt-3 flex flex-col gap-2 text-sm font-medium text-slate-900 dark:text-slate-100">
                   <Link href="/applications" className="underline">
                     Opportunities
                   </Link>
@@ -291,86 +291,86 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <section className="mb-8 rounded-xl border bg-white p-6 shadow-sm">
+            <section className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <div className="flex items-center justify-between gap-4">
-                <h2 className="text-lg font-semibold text-slate-900">Opportunity breakdown</h2>
-                <span className="text-sm text-slate-500">Simplified view</span>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Opportunity breakdown</h2>
+                <span className="text-sm text-slate-500 dark:text-slate-400">Simplified view</span>
               </div>
 
               <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 {opportunityTypeBuckets.map((bucket) => (
-                  <div key={bucket.key} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-sm text-slate-500">{bucket.label}</p>
-                    <p className="mt-1 text-2xl font-semibold text-slate-900">{opportunityTypeCounts[bucket.key] ?? 0}</p>
+                  <div key={bucket.key} className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+                    <p className="text-sm text-slate-500 dark:text-slate-300">{bucket.label}</p>
+                    <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-100">{opportunityTypeCounts[bucket.key] ?? 0}</p>
                   </div>
                 ))}
               </div>
             </section>
 
-            <section className="mb-8 rounded-xl border bg-white p-6 shadow-sm">
+            <section className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <div className="flex items-center justify-between gap-4">
-                <h2 className="text-lg font-semibold text-slate-900">Outcome summary</h2>
-                <span className="text-sm text-slate-500">Current status and archive states</span>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Outcome summary (final result)</h2>
+                <span className="text-sm text-slate-500 dark:text-slate-400">Final result and archive state</span>
               </div>
 
               <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {outcomeOptions.map((outcome) => (
-                  <div key={outcome} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-sm text-slate-500">{getOutcomeLabel(outcome)}</p>
-                    <p className="mt-1 text-2xl font-semibold text-slate-900">{outcomeCounts[outcome] ?? 0}</p>
+                  <div key={outcome} className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+                    <p className="text-sm text-slate-500 dark:text-slate-300">{getOutcomeLabel(outcome)}</p>
+                    <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-100">{outcomeCounts[outcome] ?? 0}</p>
                   </div>
                 ))}
               </div>
             </section>
 
             <div className="grid gap-8 lg:grid-cols-2">
-              <section className="rounded-xl border bg-white p-6 shadow-sm">
+              <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                 <div className="flex items-center justify-between gap-4">
-                  <h2 className="text-lg font-semibold text-slate-900">Recent opportunities</h2>
-                  <Link href="/applications" className="text-sm font-medium text-slate-900 underline">
+                  <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Recent opportunities</h2>
+                  <Link href="/applications" className="text-sm font-medium text-slate-900 underline dark:text-slate-100">
                     View all
                   </Link>
                 </div>
 
                 {recentApplications.length === 0 ? (
-                  <p className="mt-4 text-sm text-slate-600">No opportunities yet.</p>
+                  <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">No opportunities yet.</p>
                 ) : (
                   <div className="mt-4 space-y-3">
                     {recentApplications.map((application) => (
-                      <article key={application.id} className="rounded-lg border border-slate-200 p-4">
-                        <h3 className="font-medium text-slate-900">{application.title}</h3>
-                        <p className="text-sm text-slate-600">
+                      <article key={application.id} className="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
+                        <h3 className="font-medium text-slate-900 dark:text-slate-100">{application.title}</h3>
+                        <p className="text-sm text-slate-600 dark:text-slate-300">
                           {application.company?.name ?? 'No company'} · {application.status}
                         </p>
-                        <p className="mt-1 text-xs font-medium text-slate-500">
+                        <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
                           {getOpportunityTypeLabel(application.opportunityType)}
                           {!isActiveOutcome(application.outcome) ? ` · ${getOutcomeLabel(application.outcome)}` : ''}
                         </p>
-                        <p className="mt-1 text-sm text-slate-500">Created {formatDate(application.createdAt)}</p>
+                        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Created {formatDate(application.createdAt)}</p>
                       </article>
                     ))}
                   </div>
                 )}
               </section>
 
-              <section className="rounded-xl border bg-white p-6 shadow-sm">
+              <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                 <div className="flex items-center justify-between gap-4">
-                  <h2 className="text-lg font-semibold text-slate-900">Upcoming reminders</h2>
-                  <Link href="/reminders" className="text-sm font-medium text-slate-900 underline">
+                  <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Upcoming reminders</h2>
+                  <Link href="/reminders" className="text-sm font-medium text-slate-900 underline dark:text-slate-100">
                     View all
                   </Link>
                 </div>
 
                 {upcomingReminders.length === 0 ? (
-                  <p className="mt-4 text-sm text-slate-600">No upcoming reminders.</p>
+                  <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">No upcoming reminders.</p>
                 ) : (
                   <div className="mt-4 space-y-3">
                     {upcomingReminders.map((reminder) => (
-                      <article key={reminder.id} className="rounded-lg border border-slate-200 p-4">
-                        <h3 className="font-medium text-slate-900">{reminder.title}</h3>
-                        <p className="text-sm text-slate-600">Due {formatDate(reminder.dueDate)}</p>
+                      <article key={reminder.id} className="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
+                        <h3 className="font-medium text-slate-900 dark:text-slate-100">{reminder.title}</h3>
+                        <p className="text-sm text-slate-600 dark:text-slate-300">Due {formatDate(reminder.dueDate)}</p>
                         {reminder.application ? (
-                          <p className="mt-1 text-sm text-slate-500">
+                          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                             Linked to {reminder.application.title}
                             {reminder.application.company?.name ? ` · ${reminder.application.company.name}` : ''}
                           </p>

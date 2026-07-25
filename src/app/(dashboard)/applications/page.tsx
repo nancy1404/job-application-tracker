@@ -86,6 +86,10 @@ function isFinalOutcome(value?: string) {
   return value && value !== 'ACTIVE';
 }
 
+function isActiveOpportunity(application: Application) {
+  return !isFinalOutcome(application.outcome);
+}
+
 function getCelebrationMessage(application: Application) {
   if (application.outcome === 'ACCEPTED') {
     return '🎉 Accepted — congratulations!';
@@ -415,17 +419,207 @@ export default function ApplicationsPage() {
     }
   }
 
+  const activeApplications = applications.filter(isActiveOpportunity);
+  const archivedApplications = applications.filter((application) => !isActiveOpportunity(application));
+
+  function renderOpportunityCard(application: Application) {
+    const celebrationMessage = getCelebrationMessage(application);
+
+    return (
+      <article key={application.id} className="rounded-lg border border-slate-200 p-4 dark:border-slate-700 dark:bg-slate-900/50">
+        {celebrationMessage ? (
+          <p className="mb-2 text-sm font-medium text-emerald-700 dark:text-emerald-400">{celebrationMessage}</p>
+        ) : null}
+
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h3 className="font-medium text-slate-900 dark:text-slate-100">{application.title}</h3>
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              {application.company?.name ?? 'No company'} · {application.status}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2 text-xs font-medium">
+              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                {getOpportunityTypeLabel(application.opportunityType)}
+              </span>
+              {isFinalOutcome(application.outcome) ? (
+                <span className="rounded-full bg-amber-100 px-2.5 py-1 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                  {application.outcome}
+                </span>
+              ) : null}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => startEdit(application)}
+              className="rounded-md border border-slate-300 px-3 py-1 text-sm text-slate-700 dark:border-slate-600 dark:text-slate-200"
+            >
+              Edit
+            </button>
+            <button
+              type="button"
+              onClick={() => deleteApplication(application.id)}
+              className="rounded-md border border-red-200 px-3 py-1 text-sm text-red-700 dark:border-red-800 dark:text-red-300"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+
+        <dl className="mt-3 space-y-1 text-sm text-slate-600 dark:text-slate-300">
+          {application.contactName ? (
+            <div>
+              <dt className="sr-only">Contact name</dt>
+              <dd>Contact: {application.contactName}</dd>
+            </div>
+          ) : null}
+          {application.contactEmail ? (
+            <div>
+              <dt className="sr-only">Contact email</dt>
+              <dd>
+                <a className="text-slate-900 underline dark:text-slate-100" href={`mailto:${application.contactEmail}`}>
+                  {application.contactEmail}
+                </a>
+              </dd>
+            </div>
+          ) : null}
+          {application.jobUrl ? (
+            <div>
+              <dt className="sr-only">Job URL</dt>
+              <dd>
+                <a className="text-slate-900 underline dark:text-slate-100" href={application.jobUrl} target="_blank" rel="noreferrer">
+                  View job posting
+                </a>
+              </dd>
+            </div>
+          ) : null}
+          {application.appliedDate ? (
+            <div>
+              <dt className="sr-only">Applied date</dt>
+              <dd>Applied: {new Date(application.appliedDate).toLocaleDateString()}</dd>
+            </div>
+          ) : null}
+          {application.outcomeDate ? (
+            <div>
+              <dt className="sr-only">Outcome date</dt>
+              <dd>Outcome: {new Date(application.outcomeDate).toLocaleDateString()}</dd>
+            </div>
+          ) : null}
+          {application.description ? (
+            <div>
+              <dt className="sr-only">Description</dt>
+              <dd>{application.description}</dd>
+            </div>
+          ) : null}
+          {application.notes ? (
+            <div>
+              <dt className="sr-only">Notes</dt>
+              <dd>{application.notes}</dd>
+            </div>
+          ) : null}
+          {application.outcomeNotes ? (
+            <div>
+              <dt className="sr-only">Outcome notes</dt>
+              <dd>{application.outcomeNotes}</dd>
+            </div>
+          ) : null}
+        </dl>
+
+        <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700">
+          <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">AI insight</h4>
+
+          {resumes.length === 0 ? (
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Create a resume first to generate an insight.</p>
+          ) : (
+            <div className="mt-3 space-y-3">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200" htmlFor={`resume-${application.id}`}>
+                  Resume
+                </label>
+                <select
+                  id={`resume-${application.id}`}
+                  value={getSelectedResumeId(application.id)}
+                  onChange={(event) =>
+                    setSelectedResumeIds((currentSelections) => ({
+                      ...currentSelections,
+                      [application.id]: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                >
+                  <option value="">Select a resume</option>
+                  {resumes.map((resume) => (
+                    <option key={resume.id} value={resume.id}>
+                      {resume.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {aiErrors[application.id] ? <p className="text-sm text-red-600 dark:text-red-400">{aiErrors[application.id]}</p> : null}
+
+              <button
+                type="button"
+                onClick={() => generateAiInsight(application)}
+                disabled={generatingApplicationId === application.id}
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 disabled:cursor-not-allowed disabled:opacity-70 dark:border-slate-600 dark:text-slate-200"
+              >
+                {generatingApplicationId === application.id ? 'Generating...' : 'Generate AI Insight'}
+              </button>
+
+              {aiInsights[application.id] ? (
+                <div className="rounded-lg bg-slate-50 p-3 text-sm text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                  <p className="font-semibold text-slate-900 dark:text-slate-100">Match score: {aiInsights[application.id].matchScore}</p>
+                  <p className="mt-2">{aiInsights[application.id].summary}</p>
+
+                  <div className="mt-3 space-y-2">
+                    <div>
+                      <p className="font-medium text-slate-900 dark:text-slate-100">Strengths</p>
+                      <ul className="list-disc pl-5">
+                        {(aiInsights[application.id].strengths ?? []).map((item, index) => (
+                          <li key={index}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div>
+                      <p className="font-medium text-slate-900 dark:text-slate-100">Gaps</p>
+                      <ul className="list-disc pl-5">
+                        {(aiInsights[application.id].gaps ?? []).map((item, index) => (
+                          <li key={index}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div>
+                      <p className="font-medium text-slate-900 dark:text-slate-100">Suggestions</p>
+                      <ul className="list-disc pl-5">
+                        {(aiInsights[application.id].suggestions ?? []).map((item, index) => (
+                          <li key={index}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          )}
+        </div>
+      </article>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <div className="mx-auto max-w-5xl px-6 py-10">
         <header className="mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Opportunities</h1>
-          <p className="mt-2 text-sm text-slate-600">Track applications, outreach, and follow-ups in one place.</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Opportunities</h1>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Track applications, outreach, and follow-ups in one place.</p>
         </header>
 
         <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-          <section className="rounded-xl border bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-900">
+          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
               {editingApplicationId ? 'Edit opportunity' : 'New opportunity'}
             </h2>
 
@@ -649,208 +843,43 @@ export default function ApplicationsPage() {
             </form>
           </section>
 
-          <section className="rounded-xl border bg-white p-6 shadow-sm">
+          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center justify-between gap-4">
-              <h2 className="text-lg font-semibold text-slate-900">Your applications</h2>
-              <span className="text-sm text-slate-500">{applications.length} total</span>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Your opportunities</h2>
+              <span className="text-sm text-slate-500 dark:text-slate-400">{applications.length} total</span>
             </div>
 
-            {isLoading ? <p className="mt-4 text-sm text-slate-600">Loading applications...</p> : null}
+            {isLoading ? <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">Loading opportunities...</p> : null}
             {loadError ? <p className="mt-4 text-sm text-red-600">{loadError}</p> : null}
 
             {!isLoading && !loadError && applications.length === 0 ? (
-              <p className="mt-4 text-sm text-slate-600">No applications yet.</p>
+              <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">No opportunities yet.</p>
             ) : null}
 
-            <div className="mt-4 space-y-3">
-              {applications.map((application) => {
-                const celebrationMessage = getCelebrationMessage(application);
+            <div className="mt-4 space-y-6">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Active / Ongoing</h3>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  Opportunities where outcome is ACTIVE.
+                </p>
+                {activeApplications.length === 0 ? (
+                  <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">No active opportunities.</p>
+                ) : (
+                  <div className="mt-3 space-y-3">{activeApplications.map(renderOpportunityCard)}</div>
+                )}
+              </div>
 
-                return (
-                <article key={application.id} className="rounded-lg border border-slate-200 p-4">
-                  {celebrationMessage ? (
-                    <p className="mb-2 text-sm font-medium text-emerald-700">{celebrationMessage}</p>
-                  ) : null}
-
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <h3 className="font-medium text-slate-900">{application.title}</h3>
-                      <p className="text-sm text-slate-600">
-                        {application.company?.name ?? 'No company'} · {application.status}
-                      </p>
-                      <div className="mt-2 flex flex-wrap gap-2 text-xs font-medium">
-                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">
-                          {getOpportunityTypeLabel(application.opportunityType)}
-                        </span>
-                        {isFinalOutcome(application.outcome) ? (
-                          <span className="rounded-full bg-amber-100 px-2.5 py-1 text-amber-800">
-                            {application.outcome}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => startEdit(application)}
-                        className="rounded-md border border-slate-300 px-3 py-1 text-sm text-slate-700"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => deleteApplication(application.id)}
-                        className="rounded-md border border-red-200 px-3 py-1 text-sm text-red-700"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-
-                  <dl className="mt-3 space-y-1 text-sm text-slate-600">
-                    {application.contactName ? (
-                      <div>
-                        <dt className="sr-only">Contact name</dt>
-                        <dd>Contact: {application.contactName}</dd>
-                      </div>
-                    ) : null}
-                    {application.contactEmail ? (
-                      <div>
-                        <dt className="sr-only">Contact email</dt>
-                        <dd>
-                          <a className="text-slate-900 underline" href={`mailto:${application.contactEmail}`}>
-                            {application.contactEmail}
-                          </a>
-                        </dd>
-                      </div>
-                    ) : null}
-                    {application.jobUrl ? (
-                      <div>
-                        <dt className="sr-only">Job URL</dt>
-                        <dd>
-                          <a className="text-slate-900 underline" href={application.jobUrl} target="_blank" rel="noreferrer">
-                            View job posting
-                          </a>
-                        </dd>
-                      </div>
-                    ) : null}
-                    {application.appliedDate ? (
-                      <div>
-                        <dt className="sr-only">Applied date</dt>
-                        <dd>Applied: {new Date(application.appliedDate).toLocaleDateString()}</dd>
-                      </div>
-                    ) : null}
-                    {application.outcomeDate ? (
-                      <div>
-                        <dt className="sr-only">Outcome date</dt>
-                        <dd>Outcome: {new Date(application.outcomeDate).toLocaleDateString()}</dd>
-                      </div>
-                    ) : null}
-                    {application.description ? (
-                      <div>
-                        <dt className="sr-only">Description</dt>
-                        <dd>{application.description}</dd>
-                      </div>
-                    ) : null}
-                    {application.notes ? (
-                      <div>
-                        <dt className="sr-only">Notes</dt>
-                        <dd>{application.notes}</dd>
-                      </div>
-                    ) : null}
-                    {application.outcomeNotes ? (
-                      <div>
-                        <dt className="sr-only">Outcome notes</dt>
-                        <dd>{application.outcomeNotes}</dd>
-                      </div>
-                    ) : null}
-                  </dl>
-
-                  <div className="mt-4 border-t border-slate-200 pt-4">
-                    <h4 className="text-sm font-semibold text-slate-900">AI insight</h4>
-
-                    {resumes.length === 0 ? (
-                      <p className="mt-2 text-sm text-slate-600">Create a resume first to generate an insight.</p>
-                    ) : (
-                      <div className="mt-3 space-y-3">
-                        <div>
-                          <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor={`resume-${application.id}`}>
-                            Resume
-                          </label>
-                          <select
-                            id={`resume-${application.id}`}
-                            value={getSelectedResumeId(application.id)}
-                            onChange={(event) =>
-                              setSelectedResumeIds((currentSelections) => ({
-                                ...currentSelections,
-                                [application.id]: event.target.value,
-                              }))
-                            }
-                            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                          >
-                            <option value="">Select a resume</option>
-                            {resumes.map((resume) => (
-                              <option key={resume.id} value={resume.id}>
-                                {resume.title}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        {aiErrors[application.id] ? (
-                          <p className="text-sm text-red-600">{aiErrors[application.id]}</p>
-                        ) : null}
-
-                        <button
-                          type="button"
-                          onClick={() => generateAiInsight(application)}
-                          disabled={generatingApplicationId === application.id}
-                          className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 disabled:cursor-not-allowed disabled:opacity-70"
-                        >
-                          {generatingApplicationId === application.id ? 'Generating...' : 'Generate AI Insight'}
-                        </button>
-
-                        {aiInsights[application.id] ? (
-                          <div className="rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
-                            <p className="font-semibold text-slate-900">Match score: {aiInsights[application.id].matchScore}</p>
-                            <p className="mt-2">{aiInsights[application.id].summary}</p>
-
-                            <div className="mt-3 space-y-2">
-                              <div>
-                                <p className="font-medium text-slate-900">Strengths</p>
-                                <ul className="list-disc pl-5">
-                                  {(aiInsights[application.id].strengths ?? []).map((item, index) => (
-                                    <li key={index}>{item}</li>
-                                  ))}
-                                </ul>
-                              </div>
-
-                              <div>
-                                <p className="font-medium text-slate-900">Gaps</p>
-                                <ul className="list-disc pl-5">
-                                  {(aiInsights[application.id].gaps ?? []).map((item, index) => (
-                                    <li key={index}>{item}</li>
-                                  ))}
-                                </ul>
-                              </div>
-
-                              <div>
-                                <p className="font-medium text-slate-900">Suggestions</p>
-                                <ul className="list-disc pl-5">
-                                  {(aiInsights[application.id].suggestions ?? []).map((item, index) => (
-                                    <li key={index}>{item}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            </div>
-                          </div>
-                        ) : null}
-                      </div>
-                    )}
-                  </div>
-                </article>
-              );
-              })}
+              <div className="border-t border-slate-200 pt-4 dark:border-slate-700">
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Archive / Final outcomes</h3>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  Outcomes: ACCEPTED, REJECTED, NO_RESPONSE, WITHDRAWN, ARCHIVED.
+                </p>
+                {archivedApplications.length === 0 ? (
+                  <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">No archived or final-outcome opportunities yet.</p>
+                ) : (
+                  <div className="mt-3 space-y-3">{archivedApplications.map(renderOpportunityCard)}</div>
+                )}
+              </div>
             </div>
           </section>
         </div>
