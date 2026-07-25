@@ -43,7 +43,15 @@ type SessionUser = {
   email?: string | null;
 };
 
-const statusOptions = ['SAVED', 'APPLIED', 'INTERVIEW', 'OFFER', 'REJECTED', 'ARCHIVED'];
+const statusOptions = [
+  { value: 'INTERESTED', label: 'Interested' },
+  { value: 'SAVED', label: 'Saved' },
+  { value: 'APPLIED', label: 'Applied' },
+  { value: 'INTERVIEW', label: 'Interview' },
+  { value: 'OFFER', label: 'Offer' },
+  { value: 'REJECTED', label: 'Rejected (legacy)' },
+  { value: 'ARCHIVED', label: 'Archived (legacy)' },
+];
 
 const opportunityTypeBuckets = [
   { key: 'JOB', label: 'Jobs' },
@@ -192,8 +200,8 @@ export default function DashboardPage() {
     void loadData();
   }, [router]);
 
-  const applicationsByStatus = statusOptions.reduce<Record<string, number>>((counts, status) => {
-    counts[status] = applications.filter((application) => application.status === status).length;
+  const applicationsByStatus = statusOptions.reduce<Record<string, number>>((counts, statusOption) => {
+    counts[statusOption.value] = applications.filter((application) => application.status === statusOption.value).length;
     return counts;
   }, {});
 
@@ -266,10 +274,10 @@ export default function DashboardPage() {
               <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                 <p className="text-sm text-slate-500 dark:text-slate-400">Status summary (current stage)</p>
                 <div className="mt-3 space-y-1 text-sm text-slate-700 dark:text-slate-200">
-                  {statusOptions.map((status) => (
-                    <div key={status} className="flex items-center justify-between gap-3">
-                      <span>{status}</span>
-                      <span>{applicationsByStatus[status] ?? 0}</span>
+                  {statusOptions.map((statusOption) => (
+                    <div key={statusOption.value} className="flex items-center justify-between gap-3">
+                      <span>{statusOption.label}</span>
+                      <span>{applicationsByStatus[statusOption.value] ?? 0}</span>
                     </div>
                   ))}
                 </div>

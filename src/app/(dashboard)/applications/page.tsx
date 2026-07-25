@@ -47,7 +47,8 @@ type AiInsight = {
 
 type FollowUpTimingOption = 'THREE_DAYS' | 'ONE_WEEK' | 'TWO_WEEKS' | 'CUSTOM';
 
-const statusOptions = ['SAVED', 'APPLIED', 'INTERVIEW', 'OFFER', 'REJECTED', 'ARCHIVED'];
+const statusOptions = ['INTERESTED', 'SAVED', 'APPLIED', 'INTERVIEW', 'OFFER'];
+const legacyStatusOptions = ['REJECTED', 'ARCHIVED'];
 const opportunityTypeOptions = [
   { value: 'JOB', label: 'Job' },
   { value: 'INTERNSHIP', label: 'Internship' },
@@ -157,6 +158,10 @@ function getDueDateForFollowUpTiming(timing: FollowUpTimingOption, customDateTim
   }
 
   return getDefaultFollowUpDate(7);
+}
+
+function isLegacyStatus(value: string) {
+  return legacyStatusOptions.includes(value);
 }
 
 export default function ApplicationsPage() {
@@ -893,6 +898,9 @@ export default function ApplicationsPage() {
                         {option}
                       </option>
                     ))}
+                    {isLegacyStatus(status) ? (
+                      <option value={status}>{`${status} (Legacy)`}</option>
+                    ) : null}
                   </select>
                 </div>
               </div>
