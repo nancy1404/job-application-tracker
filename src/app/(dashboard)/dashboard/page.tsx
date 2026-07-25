@@ -16,6 +16,7 @@ type Application = {
   opportunityType?: string | null;
   outcome?: string | null;
   createdAt?: string;
+  appliedDate?: string | null;
   company?: Company | null;
 };
 
@@ -135,6 +136,23 @@ function formatDateTime(value?: string) {
   }).format(new Date(value));
 }
 
+function toValidDate(value?: string) {
+  if (!value) {
+    return null;
+  }
+
+  const parsedDate = new Date(value);
+  return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+}
+
+function isWithinRange(value: Date | null, start: Date, end: Date) {
+  if (!value) {
+    return false;
+  }
+
+  return value >= start && value <= end;
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [applications, setApplications] = useState<Application[]>([]);
@@ -218,6 +236,69 @@ export default function DashboardPage() {
   const defaultResume = resumes.find((resume) => resume.isDefault);
   const pendingReminders = reminders.filter((reminder) => reminder.status === 'PENDING');
   const now = new Date();
+  const weekStart = new Date(now);
+  const dayIndex = (weekStart.getDay() + 6) % 7;
+  weekStart.setDate(weekStart.getDate() - dayIndex);
+  weekStart.setHours(0, 0, 0, 0);
+
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  function getProgressMetrics(periodStart: Date) {
+    const opportunitiesAdded = applications.filter((application) =>
+      isWithinRange(toValidDate(application.createdAt), periodStart, now)
+    );
+
+    const applicationsSubmitted = applications.filter((application) =>
+      isWithinRange(toValidDate(application.appliedDate ?? undefined), periodStart, now)
+    );
+
+    const interviewsInRange = opportunitiesAdded.filter((application) => application.status === 'INTERVIEW').length;
+    const offersInRange = opportunitiesAdded.filter((application) => application.status === 'OFFER').length;
+
+    const followUpsDue = reminders.filter(
+      (reminder) =>
+        reminder.status === 'PENDING' && isWithinRange(toValidDate(reminder.dueDate), periodStart, now)
+    ).length;
+
+    const followUpsCompleted = reminders.filter(
+      (reminder) =>
+        reminder.status === 'COMPLETED' && isWithinRange(toValidDate(reminder.dueDate), periodStart, now)
+    ).length;
+
+    const submissionPercent = opportunitiesAdded.length
+      ? Math.min(100, Math.round((applicationsSubmitted.length / opportunitiesAdded.length) * 100))
+      : 0;
+
+    const followUpTotal = followUpsDue + followUpsCompleted;
+    const followUpCompletionPercent = followUpTotal
+      ? Math.min(100, Math.round((followUpsCompleted / followUpTotal) * 100))
+      : 0;
+
+    return {
+      opportunitiesAdded: opportunitiesAdded.length,
+      applicationsSubmitted: applicationsSubmitted.length,
+      interviewsInRange,
+      offersInRange,
+      followUpsDue,
+      followUpsCompleted,
+      submissionPercent,
+      followUpCompletionPercent,
+    };
+  }
+
+  const weeklyProgress = getProgressMetrics(weekStart);
+  const monthlyProgress = getProgressMetrics(monthStart);
+  const hasProgressData =
+    weeklyProgress.opportunitiesAdded +
+      weeklyProgress.applicationsSubmitted +
+      weeklyProgress.followUpsDue +
+      weeklyProgress.followUpsCompleted +
+      monthlyProgress.opportunitiesAdded +
+      monthlyProgress.applicationsSubmitted +
+      monthlyProgress.followUpsDue +
+      monthlyProgress.followUpsCompleted >
+    0;
+
   const overdueReminders = reminders
     .filter((reminder) => reminder.status === 'PENDING' && new Date(reminder.dueDate) < now)
     .sort((left, right) => new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime());
@@ -306,6 +387,143 @@ export default function DashboardPage() {
                 <p className="mt-2 text-3xl font-semibold text-sky-800 dark:text-sky-200">{upcomingReminders.length}</p>
               </div>
             </div>
+
+            <section className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex items-center justify-between gap-4">
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Progress</h2>
+                <span className="text-sm text-slate-500 dark:text-slate-400">This week and this month</span>
+              </div>
+
+              {!hasProgressData ? (
+                <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">
+                  Start adding opportunities to see your progress here.
+                </p>
+              ) : (
+                <>
+                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                    Metrics use created date, applied date, and reminder due date with current reminder status.
+                  </p>
+
+                  <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+                      <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">This week</h3>
+                      <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                        <div className="rounded-md bg-white p-3 dark:bg-slate-900">
+                          <p className="text-slate-500 dark:text-slate-400">Opportunities added</p>
+                          <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{weeklyProgress.opportunitiesAdded}</p>
+                        </div>
+                        <div className="rounded-md bg-white p-3 dark:bg-slate-900">
+                          <p className="text-slate-500 dark:text-slate-400">Applications submitted</p>
+                          <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{weeklyProgress.applicationsSubmitted}</p>
+                        </div>
+                        <div className="rounded-md bg-white p-3 dark:bg-slate-900">
+                          <p className="text-slate-500 dark:text-slate-400">Interviews (current stage)</p>
+                          <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{weeklyProgress.interviewsInRange}</p>
+                        </div>
+                        <div className="rounded-md bg-white p-3 dark:bg-slate-900">
+                          <p className="text-slate-500 dark:text-slate-400">Offers (current stage)</p>
+                          <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{weeklyProgress.offersInRange}</p>
+                        </div>
+                        <div className="rounded-md bg-white p-3 dark:bg-slate-900">
+                          <p className="text-slate-500 dark:text-slate-400">Follow-ups due</p>
+                          <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{weeklyProgress.followUpsDue}</p>
+                        </div>
+                        <div className="rounded-md bg-white p-3 dark:bg-slate-900">
+                          <p className="text-slate-500 dark:text-slate-400">Follow-ups completed</p>
+                          <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{weeklyProgress.followUpsCompleted}</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 space-y-3">
+                        <div>
+                          <div className="mb-1 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                            <span>Submission momentum</span>
+                            <span>{weeklyProgress.submissionPercent}%</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700">
+                            <div
+                              className="h-2 rounded-full bg-sky-500 dark:bg-sky-400"
+                              style={{ width: `${weeklyProgress.submissionPercent}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="mb-1 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                            <span>Follow-up completion</span>
+                            <span>{weeklyProgress.followUpCompletionPercent}%</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700">
+                            <div
+                              className="h-2 rounded-full bg-emerald-500 dark:bg-emerald-400"
+                              style={{ width: `${weeklyProgress.followUpCompletionPercent}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+                      <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">This month</h3>
+                      <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                        <div className="rounded-md bg-white p-3 dark:bg-slate-900">
+                          <p className="text-slate-500 dark:text-slate-400">Opportunities added</p>
+                          <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{monthlyProgress.opportunitiesAdded}</p>
+                        </div>
+                        <div className="rounded-md bg-white p-3 dark:bg-slate-900">
+                          <p className="text-slate-500 dark:text-slate-400">Applications submitted</p>
+                          <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{monthlyProgress.applicationsSubmitted}</p>
+                        </div>
+                        <div className="rounded-md bg-white p-3 dark:bg-slate-900">
+                          <p className="text-slate-500 dark:text-slate-400">Interviews (current stage)</p>
+                          <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{monthlyProgress.interviewsInRange}</p>
+                        </div>
+                        <div className="rounded-md bg-white p-3 dark:bg-slate-900">
+                          <p className="text-slate-500 dark:text-slate-400">Offers (current stage)</p>
+                          <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{monthlyProgress.offersInRange}</p>
+                        </div>
+                        <div className="rounded-md bg-white p-3 dark:bg-slate-900">
+                          <p className="text-slate-500 dark:text-slate-400">Follow-ups due</p>
+                          <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{monthlyProgress.followUpsDue}</p>
+                        </div>
+                        <div className="rounded-md bg-white p-3 dark:bg-slate-900">
+                          <p className="text-slate-500 dark:text-slate-400">Follow-ups completed</p>
+                          <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{monthlyProgress.followUpsCompleted}</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 space-y-3">
+                        <div>
+                          <div className="mb-1 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                            <span>Submission momentum</span>
+                            <span>{monthlyProgress.submissionPercent}%</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700">
+                            <div
+                              className="h-2 rounded-full bg-sky-500 dark:bg-sky-400"
+                              style={{ width: `${monthlyProgress.submissionPercent}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="mb-1 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                            <span>Follow-up completion</span>
+                            <span>{monthlyProgress.followUpCompletionPercent}%</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700">
+                            <div
+                              className="h-2 rounded-full bg-emerald-500 dark:bg-emerald-400"
+                              style={{ width: `${monthlyProgress.followUpCompletionPercent}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </section>
 
             <section className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <div className="flex items-center justify-between gap-4">
