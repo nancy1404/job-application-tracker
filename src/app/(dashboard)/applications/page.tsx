@@ -10,6 +10,12 @@ type Company = {
 type Application = {
   id: string;
   title: string;
+  opportunityType?: string;
+  contactName?: string | null;
+  contactEmail?: string | null;
+  outcome?: string;
+  outcomeDate?: string | null;
+  outcomeNotes?: string | null;
   jobUrl?: string | null;
   description?: string | null;
   status: string;
@@ -35,6 +41,50 @@ type AiInsight = {
 };
 
 const statusOptions = ['SAVED', 'APPLIED', 'INTERVIEW', 'OFFER', 'REJECTED', 'ARCHIVED'];
+const opportunityTypeOptions = [
+  { value: 'JOB', label: 'Job' },
+  { value: 'INTERNSHIP', label: 'Internship' },
+  { value: 'RESEARCH', label: 'Research / Lab' },
+  { value: 'OTHER_OUTREACH', label: 'Other Outreach' },
+];
+const outcomeOptions = ['ACTIVE', 'ACCEPTED', 'REJECTED', 'NO_RESPONSE', 'WITHDRAWN', 'ARCHIVED'];
+
+function getOpportunityTypeLabel(value?: string) {
+  switch (value) {
+    case 'JOB':
+      return 'Job';
+    case 'INTERNSHIP':
+      return 'Internship';
+    case 'RESEARCH':
+    case 'LAB':
+      return 'Research / Lab';
+    case 'PROFESSOR_OUTREACH':
+    case 'OTHER_OUTREACH':
+      return 'Other Outreach';
+    default:
+      return value ?? 'Unknown';
+  }
+}
+
+function normalizeOpportunityTypeForForm(value?: string) {
+  switch (value) {
+    case 'INTERNSHIP':
+      return 'INTERNSHIP';
+    case 'RESEARCH':
+    case 'LAB':
+      return 'RESEARCH';
+    case 'PROFESSOR_OUTREACH':
+    case 'OTHER_OUTREACH':
+      return 'OTHER_OUTREACH';
+    case 'JOB':
+    default:
+      return 'JOB';
+  }
+}
+
+function isFinalOutcome(value?: string) {
+  return value && value !== 'ACTIVE';
+}
 
 function formatDateForInput(value?: string | null) {
   if (!value) {
@@ -60,6 +110,12 @@ export default function ApplicationsPage() {
   const [jobUrl, setJobUrl] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState('SAVED');
+  const [opportunityType, setOpportunityType] = useState('JOB');
+  const [contactName, setContactName] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [outcome, setOutcome] = useState('ACTIVE');
+  const [outcomeDate, setOutcomeDate] = useState('');
+  const [outcomeNotes, setOutcomeNotes] = useState('');
   const [appliedDate, setAppliedDate] = useState('');
   const [notes, setNotes] = useState('');
   const [selectedResumeIds, setSelectedResumeIds] = useState<Record<string, string>>({});
@@ -166,6 +222,12 @@ export default function ApplicationsPage() {
     setJobUrl('');
     setDescription('');
     setStatus('SAVED');
+    setOpportunityType('JOB');
+    setContactName('');
+    setContactEmail('');
+    setOutcome('ACTIVE');
+    setOutcomeDate('');
+    setOutcomeNotes('');
     setAppliedDate('');
     setNotes('');
     setFormError('');
@@ -178,6 +240,12 @@ export default function ApplicationsPage() {
     setJobUrl(application.jobUrl ?? '');
     setDescription(application.description ?? '');
     setStatus(application.status);
+    setOpportunityType(normalizeOpportunityTypeForForm(application.opportunityType));
+    setContactName(application.contactName ?? '');
+    setContactEmail(application.contactEmail ?? '');
+    setOutcome(application.outcome ?? 'ACTIVE');
+    setOutcomeDate(formatDateForInput(application.outcomeDate));
+    setOutcomeNotes(application.outcomeNotes ?? '');
     setAppliedDate(formatDateForInput(application.appliedDate));
     setNotes(application.notes ?? '');
     setFormError('');
@@ -267,6 +335,12 @@ export default function ApplicationsPage() {
           jobUrl,
           description,
           status,
+          opportunityType,
+          contactName,
+          contactEmail,
+          outcome,
+          outcomeDate: outcomeDate ? new Date(outcomeDate).toISOString() : undefined,
+          outcomeNotes,
           appliedDate: appliedDate ? new Date(appliedDate).toISOString() : undefined,
           notes,
         }),
@@ -282,6 +356,12 @@ export default function ApplicationsPage() {
       setJobUrl('');
       setDescription('');
       setStatus('SAVED');
+      setOpportunityType('JOB');
+      setContactName('');
+      setContactEmail('');
+      setOutcome('ACTIVE');
+      setOutcomeDate('');
+      setOutcomeNotes('');
       setAppliedDate('');
       setNotes('');
       setEditingApplicationId('');
@@ -327,17 +407,49 @@ export default function ApplicationsPage() {
     <div className="min-h-screen bg-slate-50">
       <div className="mx-auto max-w-5xl px-6 py-10">
         <header className="mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Applications</h1>
-          <p className="mt-2 text-sm text-slate-600">Track your active job applications in one place.</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Opportunities</h1>
+          <p className="mt-2 text-sm text-slate-600">Track applications, outreach, and follow-ups in one place.</p>
         </header>
 
         <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
           <section className="rounded-xl border bg-white p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-slate-900">
-              {editingApplicationId ? 'Edit application' : 'New application'}
+              {editingApplicationId ? 'Edit opportunity' : 'New opportunity'}
             </h2>
 
             <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="opportunityType">
+                    Opportunity type
+                  </label>
+                  <select
+                    id="opportunityType"
+                    value={opportunityType}
+                    onChange={(event) => setOpportunityType(event.target.value)}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  >
+                    {opportunityTypeOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="contactName">
+                    Contact name
+                  </label>
+                  <input
+                    id="contactName"
+                    value={contactName}
+                    onChange={(event) => setContactName(event.target.value)}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="title">
@@ -400,6 +512,56 @@ export default function ApplicationsPage() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="contactEmail">
+                    Contact email
+                  </label>
+                  <input
+                    id="contactEmail"
+                    type="email"
+                    value={contactEmail}
+                    onChange={(event) => setContactEmail(event.target.value)}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="outcome">
+                    Outcome
+                  </label>
+                  <select
+                    id="outcome"
+                    value={outcome}
+                    onChange={(event) => setOutcome(event.target.value)}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  >
+                    {outcomeOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="outcomeDate">
+                    Outcome date
+                  </label>
+                  <input
+                    id="outcomeDate"
+                    type="date"
+                    value={outcomeDate}
+                    onChange={(event) => setOutcomeDate(event.target.value)}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  />
+                </div>
+
+                <div />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="appliedDate">
                     Applied date
                   </label>
@@ -436,6 +598,19 @@ export default function ApplicationsPage() {
                   id="notes"
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
+                  rows={3}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="outcomeNotes">
+                  Outcome notes
+                </label>
+                <textarea
+                  id="outcomeNotes"
+                  value={outcomeNotes}
+                  onChange={(event) => setOutcomeNotes(event.target.value)}
                   rows={3}
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                 />
@@ -484,6 +659,16 @@ export default function ApplicationsPage() {
                       <p className="text-sm text-slate-600">
                         {application.company?.name ?? 'No company'} · {application.status}
                       </p>
+                      <div className="mt-2 flex flex-wrap gap-2 text-xs font-medium">
+                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">
+                          {getOpportunityTypeLabel(application.opportunityType)}
+                        </span>
+                        {isFinalOutcome(application.outcome) ? (
+                          <span className="rounded-full bg-amber-100 px-2.5 py-1 text-amber-800">
+                            {application.outcome}
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
                     <div className="flex gap-2">
                       <button
@@ -504,6 +689,22 @@ export default function ApplicationsPage() {
                   </div>
 
                   <dl className="mt-3 space-y-1 text-sm text-slate-600">
+                    {application.contactName ? (
+                      <div>
+                        <dt className="sr-only">Contact name</dt>
+                        <dd>Contact: {application.contactName}</dd>
+                      </div>
+                    ) : null}
+                    {application.contactEmail ? (
+                      <div>
+                        <dt className="sr-only">Contact email</dt>
+                        <dd>
+                          <a className="text-slate-900 underline" href={`mailto:${application.contactEmail}`}>
+                            {application.contactEmail}
+                          </a>
+                        </dd>
+                      </div>
+                    ) : null}
                     {application.jobUrl ? (
                       <div>
                         <dt className="sr-only">Job URL</dt>
@@ -520,6 +721,12 @@ export default function ApplicationsPage() {
                         <dd>Applied: {new Date(application.appliedDate).toLocaleDateString()}</dd>
                       </div>
                     ) : null}
+                    {application.outcomeDate ? (
+                      <div>
+                        <dt className="sr-only">Outcome date</dt>
+                        <dd>Outcome: {new Date(application.outcomeDate).toLocaleDateString()}</dd>
+                      </div>
+                    ) : null}
                     {application.description ? (
                       <div>
                         <dt className="sr-only">Description</dt>
@@ -530,6 +737,12 @@ export default function ApplicationsPage() {
                       <div>
                         <dt className="sr-only">Notes</dt>
                         <dd>{application.notes}</dd>
+                      </div>
+                    ) : null}
+                    {application.outcomeNotes ? (
+                      <div>
+                        <dt className="sr-only">Outcome notes</dt>
+                        <dd>{application.outcomeNotes}</dd>
                       </div>
                     ) : null}
                   </dl>
