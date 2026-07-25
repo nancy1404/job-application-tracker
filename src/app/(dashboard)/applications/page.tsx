@@ -10,6 +10,11 @@ type Company = {
 type Application = {
   id: string;
   title: string;
+  usedResumeId?: string | null;
+  usedResume?: {
+    id: string;
+    title: string;
+  } | null;
   opportunityType?: string;
   contactName?: string | null;
   contactEmail?: string | null;
@@ -177,6 +182,7 @@ export default function ApplicationsPage() {
   const [outcomeDate, setOutcomeDate] = useState('');
   const [outcomeNotes, setOutcomeNotes] = useState('');
   const [appliedDate, setAppliedDate] = useState('');
+  const [usedResumeId, setUsedResumeId] = useState('');
   const [notes, setNotes] = useState('');
   const [selectedResumeIds, setSelectedResumeIds] = useState<Record<string, string>>({});
   const [aiInsights, setAiInsights] = useState<Record<string, AiInsight>>({});
@@ -219,10 +225,15 @@ export default function ApplicationsPage() {
       if (resumesData.resumes?.length) {
         setSelectedResumeIds((currentSelections) => {
           const nextSelections = { ...currentSelections };
+          const validResumeIds = new Set((resumesData.resumes ?? []).map((resume) => resume.id));
 
           for (const application of applicationsData.applications ?? []) {
             if (!nextSelections[application.id]) {
-              nextSelections[application.id] = resumesData.resumes[0].id;
+              if (application.usedResumeId && validResumeIds.has(application.usedResumeId)) {
+                nextSelections[application.id] = application.usedResumeId;
+              } else {
+                nextSelections[application.id] = resumesData.resumes[0].id;
+              }
             }
           }
 
@@ -293,6 +304,7 @@ export default function ApplicationsPage() {
     setOutcomeDate('');
     setOutcomeNotes('');
     setAppliedDate('');
+    setUsedResumeId('');
     setNotes('');
     setFormError('');
   }
@@ -311,6 +323,7 @@ export default function ApplicationsPage() {
     setOutcomeDate(formatDateForInput(application.outcomeDate));
     setOutcomeNotes(application.outcomeNotes ?? '');
     setAppliedDate(formatDateForInput(application.appliedDate));
+    setUsedResumeId(application.usedResumeId ?? application.usedResume?.id ?? '');
     setNotes(application.notes ?? '');
     setFormError('');
   }
@@ -406,6 +419,7 @@ export default function ApplicationsPage() {
           outcomeDate: outcomeDate ? new Date(outcomeDate).toISOString() : undefined,
           outcomeNotes,
           appliedDate: appliedDate ? new Date(appliedDate).toISOString() : undefined,
+          usedResumeId: usedResumeId || null,
           notes,
         }),
       });
@@ -427,6 +441,7 @@ export default function ApplicationsPage() {
       setOutcomeDate('');
       setOutcomeNotes('');
       setAppliedDate('');
+      setUsedResumeId('');
       setNotes('');
       setEditingApplicationId('');
 
@@ -681,6 +696,12 @@ export default function ApplicationsPage() {
             <div>
               <dt className="sr-only">Outcome notes</dt>
               <dd>{application.outcomeNotes}</dd>
+            </div>
+          ) : null}
+          {application.usedResume ? (
+            <div>
+              <dt className="sr-only">Resume used</dt>
+              <dd>Resume/CV used: {application.usedResume.title}</dd>
             </div>
           ) : null}
         </dl>
@@ -941,6 +962,25 @@ export default function ApplicationsPage() {
                 </div>
 
                 <div />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="usedResumeId">
+                  Resume/CV used (optional)
+                </label>
+                <select
+                  id="usedResumeId"
+                  value={usedResumeId}
+                  onChange={(event) => setUsedResumeId(event.target.value)}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                >
+                  <option value="">No resume selected</option>
+                  {resumes.map((resume) => (
+                    <option key={resume.id} value={resume.id}>
+                      {resume.title}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
