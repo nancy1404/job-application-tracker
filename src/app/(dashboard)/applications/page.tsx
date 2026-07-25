@@ -136,6 +136,8 @@ export default function ApplicationsPage() {
   const [notes, setNotes] = useState('');
   const [selectedResumeIds, setSelectedResumeIds] = useState<Record<string, string>>({});
   const [aiInsights, setAiInsights] = useState<Record<string, AiInsight>>({});
+  const [creatingReminderForId, setCreatingReminderForId] = useState('');
+  const [reminderMessages, setReminderMessages] = useState<Record<string, string>>({});
 
   async function loadData() {
     setIsLoading(true);
@@ -419,6 +421,50 @@ export default function ApplicationsPage() {
     }
   }
 
+  async function addFollowUpReminder(application: Application) {
+    setReminderMessages((currentMessages) => {
+      const nextMessages = { ...currentMessages };
+      delete nextMessages[application.id];
+      return nextMessages;
+    });
+    setCreatingReminderForId(application.id);
+
+    try {
+      const followUpDate = new Date();
+      followUpDate.setDate(followUpDate.getDate() + 3);
+      followUpDate.setHours(9, 0, 0, 0);
+
+      const response = await fetch('/api/reminders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: `Follow up about ${application.title}`,
+          dueDate: followUpDate.toISOString(),
+          status: 'PENDING',
+          applicationId: application.id,
+        }),
+      });
+
+      const responseData = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(responseData.error ?? 'Failed to create reminder.');
+      }
+
+      setReminderMessages((currentMessages) => ({
+        ...currentMessages,
+        [application.id]: 'Follow-up reminder added.',
+      }));
+    } catch (error) {
+      setReminderMessages((currentMessages) => ({
+        ...currentMessages,
+        [application.id]: error instanceof Error ? error.message : 'Failed to create reminder.',
+      }));
+    } finally {
+      setCreatingReminderForId('');
+    }
+  }
+
   const activeApplications = applications.filter(isActiveOpportunity);
   const archivedApplications = applications.filter((application) => !isActiveOpportunity(application));
 
@@ -463,8 +509,26 @@ export default function ApplicationsPage() {
             >
               Delete
             </button>
+            {isActiveOpportunity(application) ? (
+              <button
+                type="button"
+                onClick={() => addFollowUpReminder(application)}
+                disabled={creatingReminderForId === application.id}
+                className="rounded-md border border-sky-300 px-3 py-1 text-sm text-sky-700 disabled:cursor-not-allowed disabled:opacity-70 dark:border-sky-700 dark:text-sky-300"
+              >
+                {creatingReminderForId === application.id ? 'Adding...' : 'Add follow-up reminder'}
+              </button>
+            ) : null}
           </div>
         </div>
+
+        {reminderMessages[application.id] ? (
+          <p
+            className={`mt-2 text-sm ${reminderMessages[application.id] === 'Follow-up reminder added.' ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}
+          >
+            {reminderMessages[application.id]}
+          </p>
+        ) : null}
 
         <dl className="mt-3 space-y-1 text-sm text-slate-600 dark:text-slate-300">
           {application.contactName ? (

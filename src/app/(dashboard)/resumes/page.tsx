@@ -125,30 +125,30 @@ export default function ResumesPage() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <div className="mx-auto max-w-5xl px-6 py-10">
         <header className="mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Resumes</h1>
-          <p className="mt-2 text-sm text-slate-600">Keep multiple resume versions ready for matching.</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Resumes</h1>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Keep multiple resume versions ready for matching.</p>
         </header>
 
         <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-          <section className="rounded-xl border bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-900">{editingResumeId ? 'Edit resume' : 'New resume'}</h2>
+          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{editingResumeId ? 'Edit resume' : 'New resume'}</h2>
 
             <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="title">
+                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200" htmlFor="title">
                   Title
                 </label>
                 <input
                   id="title"
                   value={title}
                   onChange={(event) => setTitle(event.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                   required
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="content">
+                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200" htmlFor="content">
                   Content
                 </label>
                 <textarea
@@ -156,17 +156,17 @@ export default function ResumesPage() {
                   value={content}
                   onChange={(event) => setContent(event.target.value)}
                   rows={10}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                   required
                 />
               </div>
 
-              <label className="flex items-center gap-2 text-sm text-slate-700">
+              <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
                 <input
                   type="checkbox"
                   checked={isDefault}
                   onChange={(event) => setIsDefault(event.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300"
+                  className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 dark:bg-slate-800"
                 />
                 Set as default resume
               </label>
@@ -186,7 +186,7 @@ export default function ResumesPage() {
                   <button
                     type="button"
                     onClick={cancelEdit}
-                    className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700"
+                    className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 dark:border-slate-600 dark:text-slate-200"
                   >
                     Cancel edit
                   </button>
@@ -195,27 +195,27 @@ export default function ResumesPage() {
             </form>
           </section>
 
-          <section className="rounded-xl border bg-white p-6 shadow-sm">
+          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center justify-between gap-4">
-              <h2 className="text-lg font-semibold text-slate-900">Your resumes</h2>
-              <span className="text-sm text-slate-500">{resumes.length} total</span>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Your resumes</h2>
+              <span className="text-sm text-slate-500 dark:text-slate-400">{resumes.length} total</span>
             </div>
 
-            {isLoading ? <p className="mt-4 text-sm text-slate-600">Loading resumes...</p> : null}
+            {isLoading ? <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">Loading resumes...</p> : null}
             {loadError ? <p className="mt-4 text-sm text-red-600">{loadError}</p> : null}
 
             {!isLoading && !loadError && resumes.length === 0 ? (
-              <p className="mt-4 text-sm text-slate-600">No resumes yet.</p>
+              <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">No resumes yet.</p>
             ) : null}
 
             <div className="mt-4 space-y-3">
               {resumes.map((resume) => (
-                <article key={resume.id} className="rounded-lg border border-slate-200 p-4">
+                <article key={resume.id} className="rounded-lg border border-slate-200 p-4 dark:border-slate-700 dark:bg-slate-900/40">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>
-                      <h3 className="font-medium text-slate-900">
+                      <h3 className="font-medium text-slate-900 dark:text-slate-100">
                         {resume.title}{' '}
-                        {resume.isDefault ? <span className="text-sm text-slate-500">(Default)</span> : null}
+                        {resume.isDefault ? <span className="text-sm text-slate-500 dark:text-slate-400">(Default)</span> : null}
                       </h3>
                     </div>
 
@@ -223,21 +223,21 @@ export default function ResumesPage() {
                       <button
                         type="button"
                         onClick={() => startEdit(resume)}
-                        className="rounded-md border border-slate-300 px-3 py-1 text-sm text-slate-700"
+                        className="rounded-md border border-slate-300 px-3 py-1 text-sm text-slate-700 dark:border-slate-600 dark:text-slate-200"
                       >
                         Edit
                       </button>
                       <button
                         type="button"
                         onClick={() => deleteResume(resume.id)}
-                        className="rounded-md border border-red-200 px-3 py-1 text-sm text-red-700"
+                        className="rounded-md border border-red-200 px-3 py-1 text-sm text-red-700 dark:border-red-800 dark:text-red-300"
                       >
                         Delete
                       </button>
                     </div>
                   </div>
 
-                  <p className="mt-3 line-clamp-4 whitespace-pre-wrap text-sm text-slate-600">{resume.content}</p>
+                  <p className="mt-3 line-clamp-4 whitespace-pre-wrap text-sm text-slate-600 dark:text-slate-300">{resume.content}</p>
                 </article>
               ))}
             </div>

@@ -116,6 +116,17 @@ function formatDate(value?: string) {
   return new Date(value).toLocaleDateString();
 }
 
+function formatDateTime(value?: string) {
+  if (!value) {
+    return 'N/A';
+  }
+
+  return new Intl.DateTimeFormat('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value));
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [applications, setApplications] = useState<Application[]>([]);
@@ -198,8 +209,12 @@ export default function DashboardPage() {
 
   const defaultResume = resumes.find((resume) => resume.isDefault);
   const pendingReminders = reminders.filter((reminder) => reminder.status === 'PENDING');
+  const now = new Date();
+  const overdueReminders = reminders
+    .filter((reminder) => reminder.status === 'PENDING' && new Date(reminder.dueDate) < now)
+    .sort((left, right) => new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime());
   const upcomingReminders = reminders
-    .filter((reminder) => reminder.status === 'PENDING' && new Date(reminder.dueDate) >= new Date())
+    .filter((reminder) => reminder.status === 'PENDING' && new Date(reminder.dueDate) >= now)
     .sort((left, right) => new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime())
     .slice(0, 3);
 
@@ -270,24 +285,14 @@ export default function DashboardPage() {
                 <p className="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">{pendingReminders.length}</p>
               </div>
 
-              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                <p className="text-sm text-slate-500 dark:text-slate-400">Upcoming reminders</p>
-                <p className="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">{upcomingReminders.length}</p>
+              <div className="rounded-xl border border-rose-200 bg-rose-50 p-5 shadow-sm dark:border-rose-900/60 dark:bg-rose-950/40">
+                <p className="text-sm text-rose-700 dark:text-rose-300">Overdue reminders</p>
+                <p className="mt-2 text-3xl font-semibold text-rose-800 dark:text-rose-200">{overdueReminders.length}</p>
               </div>
 
-              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                <p className="text-sm text-slate-500 dark:text-slate-400">Quick links</p>
-                <div className="mt-3 flex flex-col gap-2 text-sm font-medium text-slate-900 dark:text-slate-100">
-                  <Link href="/applications" className="underline">
-                    Opportunities
-                  </Link>
-                  <Link href="/resumes" className="underline">
-                    Resumes
-                  </Link>
-                  <Link href="/reminders" className="underline">
-                    Reminders
-                  </Link>
-                </div>
+              <div className="rounded-xl border border-sky-200 bg-sky-50 p-5 shadow-sm dark:border-sky-900/60 dark:bg-sky-950/40">
+                <p className="text-sm text-slate-500 dark:text-slate-400">Upcoming reminders</p>
+                <p className="mt-2 text-3xl font-semibold text-sky-800 dark:text-sky-200">{upcomingReminders.length}</p>
               </div>
             </div>
 
@@ -320,6 +325,49 @@ export default function DashboardPage() {
                     <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-100">{outcomeCounts[outcome] ?? 0}</p>
                   </div>
                 ))}
+              </div>
+            </section>
+
+            <section className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex items-center justify-between gap-4">
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Reminder urgency</h2>
+                <Link href="/reminders" className="text-sm font-medium text-slate-900 underline dark:text-slate-100">
+                  Open reminders
+                </Link>
+              </div>
+
+              <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 dark:border-rose-900/60 dark:bg-rose-950/40">
+                  <h3 className="text-sm font-semibold text-rose-800 dark:text-rose-200">Overdue</h3>
+                  {overdueReminders.length === 0 ? (
+                    <p className="mt-2 text-sm text-rose-700/90 dark:text-rose-200/90">No overdue reminders.</p>
+                  ) : (
+                    <div className="mt-2 space-y-2">
+                      {overdueReminders.slice(0, 3).map((reminder) => (
+                        <article key={reminder.id} className="rounded-md border border-rose-200/80 bg-white/70 p-3 dark:border-rose-900/60 dark:bg-rose-950/30">
+                          <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{reminder.title}</p>
+                          <p className="text-xs text-slate-600 dark:text-slate-300">Due {formatDateTime(reminder.dueDate)}</p>
+                        </article>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="rounded-lg border border-sky-200 bg-sky-50 p-4 dark:border-sky-900/60 dark:bg-sky-950/40">
+                  <h3 className="text-sm font-semibold text-sky-800 dark:text-sky-200">Upcoming</h3>
+                  {upcomingReminders.length === 0 ? (
+                    <p className="mt-2 text-sm text-sky-700/90 dark:text-sky-200/90">No upcoming reminders.</p>
+                  ) : (
+                    <div className="mt-2 space-y-2">
+                      {upcomingReminders.map((reminder) => (
+                        <article key={reminder.id} className="rounded-md border border-sky-200/80 bg-white/70 p-3 dark:border-sky-900/60 dark:bg-sky-950/30">
+                          <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{reminder.title}</p>
+                          <p className="text-xs text-slate-600 dark:text-slate-300">Due {formatDateTime(reminder.dueDate)}</p>
+                        </article>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </section>
 
