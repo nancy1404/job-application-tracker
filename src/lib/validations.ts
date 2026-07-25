@@ -36,6 +36,7 @@ const optionalDateInput = z.preprocess((value) => {
 export const createApplicationSchema = z.object({
   title: z.string().trim().min(1, 'Title is required'),
   companyId: optionalEmptyString,
+  usedResumeId: optionalEmptyString,
   jobUrl: optionalUrlString,
   description: z.string().trim().optional(),
   status: z.nativeEnum(ApplicationStatus).default(ApplicationStatus.SAVED),
