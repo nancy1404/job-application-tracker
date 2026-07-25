@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 type Company = {
@@ -51,12 +52,14 @@ function formatDate(value?: string) {
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [applications, setApplications] = useState<Application[]>([]);
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
+  const [authStatus, setAuthStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
 
   useEffect(() => {
     async function loadData() {
@@ -64,11 +67,24 @@ export default function DashboardPage() {
       setLoadError('');
 
       try {
-        const [applicationsResponse, resumesResponse, remindersResponse, sessionResponse] = await Promise.all([
+        const sessionResponse = await fetch('/api/auth/session');
+        const sessionData = (await sessionResponse.json().catch(() => null)) as
+          | { user?: SessionUser | null }
+          | null;
+
+        if (!sessionData?.user) {
+          setAuthStatus('unauthenticated');
+          router.replace('/auth/signin');
+          return;
+        }
+
+        setSessionUser(sessionData.user);
+        setAuthStatus('authenticated');
+
+        const [applicationsResponse, resumesResponse, remindersResponse] = await Promise.all([
           fetch('/api/applications'),
           fetch('/api/resumes'),
           fetch('/api/reminders'),
-          fetch('/api/auth/session'),
         ]);
 
         if (!applicationsResponse.ok) {
@@ -86,14 +102,10 @@ export default function DashboardPage() {
         const applicationsData = (await applicationsResponse.json()) as { applications: Application[] };
         const resumesData = (await resumesResponse.json()) as { resumes: Resume[] };
         const remindersData = (await remindersResponse.json()) as { reminders: Reminder[] };
-        const sessionData = (await sessionResponse.json().catch(() => null)) as
-          | { user?: SessionUser | null }
-          | null;
 
         setApplications(applicationsData.applications ?? []);
         setResumes(resumesData.resumes ?? []);
         setReminders(remindersData.reminders ?? []);
-        setSessionUser(sessionData?.user ?? null);
       } catch (error) {
         setLoadError(error instanceof Error ? error.message : 'Failed to load dashboard data.');
       } finally {
@@ -102,7 +114,7 @@ export default function DashboardPage() {
     }
 
     void loadData();
-  }, []);
+  }, [router]);
 
   const applicationsByStatus = statusOptions.reduce<Record<string, number>>((counts, status) => {
     counts[status] = applications.filter((application) => application.status === status).length;
@@ -136,6 +148,10 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="mx-auto max-w-6xl px-6 py-10">
+        {authStatus === 'loading' ? (
+          <p className="mb-4 text-sm text-slate-600">Loading dashboard...</p>
+        ) : null}
+
         <header className="mb-8">
           <p className="text-sm font-medium text-slate-600">Hello, {greetingTarget}</p>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Dashboard</h1>
