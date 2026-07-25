@@ -37,12 +37,12 @@ export default function SignUpPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6 dark:bg-slate-950">
-      <div className="w-full max-w-md rounded-xl border bg-white p-8 shadow-sm">
+      <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <PageHeader title="Create account" description="Sign up with your email and password." />
 
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="name">
+            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200" htmlFor="name">
               Name
             </label>
             <input
@@ -50,13 +50,13 @@ export default function SignUpPage() {
               type="text"
               value={name}
               onChange={(event) => setName(event.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               required
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="email">
+            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200" htmlFor="email">
               Email
             </label>
             <input
@@ -64,13 +64,13 @@ export default function SignUpPage() {
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               required
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="password">
+            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200" htmlFor="password">
               Password
             </label>
             <input
@@ -78,7 +78,7 @@ export default function SignUpPage() {
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               required
             />
           </div>
@@ -94,9 +94,9 @@ export default function SignUpPage() {
           </button>
         </form>
 
-        <p className="mt-4 text-sm text-slate-600">
+        <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">
           Already have an account?{' '}
-          <Link href="/auth/signin" className="font-medium text-slate-900">
+          <Link href="/auth/signin" className="font-medium text-slate-900 dark:text-slate-100">
             Sign in
           </Link>
         </p>
