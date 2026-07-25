@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/layout/theme-toggle';
+import { AccountPanel } from '@/components/layout/account-panel';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard' },
@@ -33,6 +34,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               </Link>
             ))}
           </nav>
+
+          <AccountPanel />
         </aside>
 
         <main className="flex-1 p-5 lg:p-8">{children}</main>
