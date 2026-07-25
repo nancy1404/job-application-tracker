@@ -86,6 +86,18 @@ function isFinalOutcome(value?: string) {
   return value && value !== 'ACTIVE';
 }
 
+function getCelebrationMessage(application: Application) {
+  if (application.outcome === 'ACCEPTED') {
+    return '🎉 Accepted — congratulations!';
+  }
+
+  if (application.status === 'OFFER') {
+    return '🎉 Offer received!';
+  }
+
+  return null;
+}
+
 function formatDateForInput(value?: string | null) {
   if (!value) {
     return '';
@@ -651,8 +663,15 @@ export default function ApplicationsPage() {
             ) : null}
 
             <div className="mt-4 space-y-3">
-              {applications.map((application) => (
+              {applications.map((application) => {
+                const celebrationMessage = getCelebrationMessage(application);
+
+                return (
                 <article key={application.id} className="rounded-lg border border-slate-200 p-4">
+                  {celebrationMessage ? (
+                    <p className="mb-2 text-sm font-medium text-emerald-700">{celebrationMessage}</p>
+                  ) : null}
+
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>
                       <h3 className="font-medium text-slate-900">{application.title}</h3>
@@ -830,7 +849,8 @@ export default function ApplicationsPage() {
                     )}
                   </div>
                 </article>
-              ))}
+              );
+              })}
             </div>
           </section>
         </div>
