@@ -1,4 +1,4 @@
-import { ApplicationStatus, ReminderStatus } from '@prisma/client';
+import { ApplicationStatus, OpportunityOutcome, OpportunityType, ReminderStatus } from '@prisma/client';
 import { z } from 'zod';
 
 const optionalEmptyString = z.preprocess((value) => {
@@ -17,6 +17,14 @@ const optionalUrlString = z.preprocess((value) => {
   return value;
 }, z.string().trim().url().optional());
 
+const optionalEmailString = z.preprocess((value) => {
+  if (typeof value === 'string' && value.trim() === '') {
+    return undefined;
+  }
+
+  return value;
+}, z.string().trim().email().optional());
+
 const optionalDateInput = z.preprocess((value) => {
   if (value == null || (typeof value === 'string' && value.trim() === '')) {
     return undefined;
@@ -31,6 +39,12 @@ export const createApplicationSchema = z.object({
   jobUrl: optionalUrlString,
   description: z.string().trim().optional(),
   status: z.nativeEnum(ApplicationStatus).default(ApplicationStatus.SAVED),
+  opportunityType: z.nativeEnum(OpportunityType).default(OpportunityType.JOB),
+  contactName: z.string().trim().optional(),
+  contactEmail: optionalEmailString,
+  outcome: z.nativeEnum(OpportunityOutcome).default(OpportunityOutcome.ACTIVE),
+  outcomeDate: optionalDateInput,
+  outcomeNotes: z.string().trim().optional(),
   appliedDate: optionalDateInput,
   notes: z.string().trim().optional(),
 });
