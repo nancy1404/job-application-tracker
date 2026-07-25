@@ -40,6 +40,8 @@ type AiInsight = {
   suggestions?: string[] | null;
 };
 
+type FollowUpTimingOption = 'THREE_DAYS' | 'ONE_WEEK' | 'TWO_WEEKS' | 'CUSTOM';
+
 const statusOptions = ['SAVED', 'APPLIED', 'INTERVIEW', 'OFFER', 'REJECTED', 'ARCHIVED'];
 const opportunityTypeOptions = [
   { value: 'JOB', label: 'Job' },
@@ -110,6 +112,48 @@ function formatDateForInput(value?: string | null) {
   return new Date(value).toISOString().slice(0, 10);
 }
 
+function formatDateTimeForInput(value?: Date) {
+  if (!value) {
+    return '';
+  }
+
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
+  const hours = String(value.getHours()).padStart(2, '0');
+  const minutes = String(value.getMinutes()).padStart(2, '0');
+
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+function getDefaultFollowUpDate(daysAhead: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + daysAhead);
+  date.setHours(9, 0, 0, 0);
+  return date;
+}
+
+function getDueDateForFollowUpTiming(timing: FollowUpTimingOption, customDateTime?: string) {
+  if (timing === 'CUSTOM') {
+    if (!customDateTime) {
+      return null;
+    }
+
+    const parsedDate = new Date(customDateTime);
+    return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+  }
+
+  if (timing === 'THREE_DAYS') {
+    return getDefaultFollowUpDate(3);
+  }
+
+  if (timing === 'TWO_WEEKS') {
+    return getDefaultFollowUpDate(14);
+  }
+
+  return getDefaultFollowUpDate(7);
+}
+
 export default function ApplicationsPage() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -138,6 +182,8 @@ export default function ApplicationsPage() {
   const [aiInsights, setAiInsights] = useState<Record<string, AiInsight>>({});
   const [creatingReminderForId, setCreatingReminderForId] = useState('');
   const [reminderMessages, setReminderMessages] = useState<Record<string, string>>({});
+  const [followUpTimingById, setFollowUpTimingById] = useState<Record<string, FollowUpTimingOption>>({});
+  const [followUpCustomDateTimeById, setFollowUpCustomDateTimeById] = useState<Record<string, string>>({});
 
   async function loadData() {
     setIsLoading(true);
@@ -421,6 +467,18 @@ export default function ApplicationsPage() {
     }
   }
 
+  function getSelectedFollowUpTiming(applicationId: string) {
+    return followUpTimingById[applicationId] ?? 'ONE_WEEK';
+  }
+
+  function getSelectedFollowUpCustomDateTime(applicationId: string) {
+    if (followUpCustomDateTimeById[applicationId]) {
+      return followUpCustomDateTimeById[applicationId];
+    }
+
+    return formatDateTimeForInput(getDefaultFollowUpDate(7));
+  }
+
   async function addFollowUpReminder(application: Application) {
     setReminderMessages((currentMessages) => {
       const nextMessages = { ...currentMessages };
@@ -430,16 +488,22 @@ export default function ApplicationsPage() {
     setCreatingReminderForId(application.id);
 
     try {
-      const followUpDate = new Date();
-      followUpDate.setDate(followUpDate.getDate() + 3);
-      followUpDate.setHours(9, 0, 0, 0);
+      const selectedTiming = getSelectedFollowUpTiming(application.id);
+      const dueDate = getDueDateForFollowUpTiming(
+        selectedTiming,
+        selectedTiming === 'CUSTOM' ? getSelectedFollowUpCustomDateTime(application.id) : undefined
+      );
+
+      if (!dueDate) {
+        throw new Error('Select a valid custom date and time for the follow-up reminder.');
+      }
 
       const response = await fetch('/api/reminders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: `Follow up about ${application.title}`,
-          dueDate: followUpDate.toISOString(),
+          dueDate: dueDate.toISOString(),
           status: 'PENDING',
           applicationId: application.id,
         }),
@@ -510,14 +574,46 @@ export default function ApplicationsPage() {
               Delete
             </button>
             {isActiveOpportunity(application) ? (
-              <button
-                type="button"
-                onClick={() => addFollowUpReminder(application)}
-                disabled={creatingReminderForId === application.id}
-                className="rounded-md border border-sky-300 px-3 py-1 text-sm text-sky-700 disabled:cursor-not-allowed disabled:opacity-70 dark:border-sky-700 dark:text-sky-300"
-              >
-                {creatingReminderForId === application.id ? 'Adding...' : 'Add follow-up reminder'}
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  value={getSelectedFollowUpTiming(application.id)}
+                  onChange={(event) =>
+                    setFollowUpTimingById((current) => ({
+                      ...current,
+                      [application.id]: event.target.value as FollowUpTimingOption,
+                    }))
+                  }
+                  className="rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
+                >
+                  <option value="THREE_DAYS">Remind me in 3 days</option>
+                  <option value="ONE_WEEK">Remind me in 1 week</option>
+                  <option value="TWO_WEEKS">Remind me in 2 weeks</option>
+                  <option value="CUSTOM">Custom date/time</option>
+                </select>
+
+                {getSelectedFollowUpTiming(application.id) === 'CUSTOM' ? (
+                  <input
+                    type="datetime-local"
+                    value={getSelectedFollowUpCustomDateTime(application.id)}
+                    onChange={(event) =>
+                      setFollowUpCustomDateTimeById((current) => ({
+                        ...current,
+                        [application.id]: event.target.value,
+                      }))
+                    }
+                    className="rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
+                  />
+                ) : null}
+
+                <button
+                  type="button"
+                  onClick={() => addFollowUpReminder(application)}
+                  disabled={creatingReminderForId === application.id}
+                  className="rounded-md border border-sky-300 px-3 py-1 text-sm text-sky-700 disabled:cursor-not-allowed disabled:opacity-70 dark:border-sky-700 dark:text-sky-300"
+                >
+                  {creatingReminderForId === application.id ? 'Adding...' : 'Add follow-up reminder'}
+                </button>
+              </div>
             ) : null}
           </div>
         </div>
