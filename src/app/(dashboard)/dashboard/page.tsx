@@ -229,7 +229,7 @@ export default function DashboardPage() {
 
         <header className="mb-8">
           <p className="text-sm font-medium text-slate-600">Hello, {greetingTarget}</p>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Opportunity Dashboard</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Dashboard</h1>
           <p className="mt-1 text-sm text-slate-500">{todayLabel}</p>
           <p className="mt-2 text-sm text-slate-600">Here’s your opportunity activity for today.</p>
         </header>
