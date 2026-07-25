@@ -110,6 +110,7 @@ model Resume {
 
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   aiInsights AiInsight[]
+  usedByApplications JobApplication[]
 
   @@index([userId, createdAt])
   @@map("resumes")
@@ -136,6 +137,7 @@ model JobApplication {
   id              String             @id @default(cuid())
   userId          String
   companyId       String?
+  usedResumeId    String?
   title           String
   jobUrl          String?
   description     String?            @db.Text
@@ -153,10 +155,12 @@ model JobApplication {
 
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   company    Company?    @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  usedResume Resume?     @relation(fields: [usedResumeId], references: [id], onDelete: SetNull)
   aiInsights AiInsight[]
   reminders  Reminder[]
 
   @@index([userId, status])
+  @@index([userId, usedResumeId])
   @@index([userId, opportunityType])
   @@index([userId, outcome])
   @@index([userId, createdAt])
