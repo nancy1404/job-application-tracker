@@ -7,6 +7,7 @@ datasource db {
 }
 
 enum ApplicationStatus {
+  INTERESTED
   SAVED
   APPLIED
   INTERVIEW
