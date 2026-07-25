@@ -22,8 +22,23 @@ function parseDate(value: Date | string | undefined) {
   return value instanceof Date ? value : new Date(value);
 }
 
+function hasOwnProperty(object: unknown, key: string) {
+  return Boolean(object && typeof object === 'object' && Object.prototype.hasOwnProperty.call(object, key));
+}
+
 function getSessionUserId(session: Awaited<ReturnType<typeof getServerSession>>) {
   return (session as { user?: { id?: string } } | null)?.user?.id;
+}
+
+async function validateResumeOwnership(resumeId: string, userId: string) {
+  const resume = await prisma.resume.findFirst({
+    where: {
+      id: resumeId,
+      userId,
+    },
+  });
+
+  return resume;
 }
 
 export async function GET(_request: Request, { params }: RouteContext) {
@@ -41,6 +56,12 @@ export async function GET(_request: Request, { params }: RouteContext) {
     },
     include: {
       company: true,
+      usedResume: {
+        select: {
+          id: true,
+          title: true,
+        },
+      },
     },
   });
 
@@ -60,7 +81,13 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   }
 
   const body = await request.json().catch(() => null);
-  const parsed = updateApplicationSchema.safeParse(body);
+  const payload = body && typeof body === 'object' ? { ...(body as Record<string, unknown>) } : body;
+
+  if (hasOwnProperty(payload, 'usedResumeId') && (payload as Record<string, unknown>).usedResumeId === null) {
+    (payload as Record<string, unknown>).usedResumeId = '';
+  }
+
+  const parsed = updateApplicationSchema.safeParse(payload);
 
   if (!parsed.success) {
     return jsonError('Validation failed', 400, parsed.error.flatten().fieldErrors);
@@ -79,6 +106,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
   const data = parsed.data;
   const companyId = data.companyId ?? existingApplication.companyId;
+  const usedResumeId = data.usedResumeId;
   const appliedDateValue = data.appliedDate;
   const outcomeDateValue = data.outcomeDate;
 
@@ -95,6 +123,14 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     }
   }
 
+  if (hasOwnProperty(payload, 'usedResumeId') && typeof usedResumeId === 'string') {
+    const resume = await validateResumeOwnership(usedResumeId, userId);
+
+    if (!resume) {
+      return jsonError('Resume not found', 404);
+    }
+  }
+
   const application = await prisma.jobApplication.update({
     where: {
       id: params.id,
@@ -102,6 +138,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     data: {
       title: data.title,
       companyId: data.companyId === undefined ? undefined : data.companyId ?? null,
+      usedResumeId: !hasOwnProperty(payload, 'usedResumeId') ? undefined : data.usedResumeId ?? null,
       jobUrl: data.jobUrl === undefined ? undefined : data.jobUrl ?? null,
       description: data.description === undefined ? undefined : data.description ?? null,
       status: data.status,
@@ -130,6 +167,12 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     },
     include: {
       company: true,
+      usedResume: {
+        select: {
+          id: true,
+          title: true,
+        },
+      },
     },
   });
 

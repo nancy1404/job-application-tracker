@@ -16,8 +16,23 @@ function parseDate(value: Date | string | undefined) {
   return value instanceof Date ? value : new Date(value);
 }
 
+function hasOwnProperty(object: unknown, key: string) {
+  return Boolean(object && typeof object === 'object' && Object.prototype.hasOwnProperty.call(object, key));
+}
+
 function getSessionUserId(session: Awaited<ReturnType<typeof getServerSession>>) {
   return (session as { user?: { id?: string } } | null)?.user?.id;
+}
+
+async function validateResumeOwnership(resumeId: string, userId: string) {
+  const resume = await prisma.resume.findFirst({
+    where: {
+      id: resumeId,
+      userId,
+    },
+  });
+
+  return resume;
 }
 
 export async function GET() {
@@ -33,6 +48,12 @@ export async function GET() {
     orderBy: { createdAt: 'desc' },
     include: {
       company: true,
+      usedResume: {
+        select: {
+          id: true,
+          title: true,
+        },
+      },
     },
   });
 
@@ -48,7 +69,13 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json().catch(() => null);
-  const parsed = createApplicationSchema.safeParse(body);
+  const payload = body && typeof body === 'object' ? { ...(body as Record<string, unknown>) } : body;
+
+  if (hasOwnProperty(payload, 'usedResumeId') && (payload as Record<string, unknown>).usedResumeId === null) {
+    (payload as Record<string, unknown>).usedResumeId = '';
+  }
+
+  const parsed = createApplicationSchema.safeParse(payload);
 
   if (!parsed.success) {
     return jsonError('Validation failed', 400, parsed.error.flatten().fieldErrors);
@@ -56,6 +83,7 @@ export async function POST(request: Request) {
 
   const data = parsed.data;
   const companyId = data.companyId ?? null;
+  const usedResumeId = data.usedResumeId ?? null;
   const appliedDateValue = data.appliedDate;
   const outcomeDateValue = data.outcomeDate;
 
@@ -72,10 +100,19 @@ export async function POST(request: Request) {
     }
   }
 
+  if (usedResumeId) {
+    const resume = await validateResumeOwnership(usedResumeId, userId);
+
+    if (!resume) {
+      return jsonError('Resume not found', 404);
+    }
+  }
+
   const application = await prisma.jobApplication.create({
     data: {
       userId,
       companyId,
+      usedResumeId,
       title: data.title,
       jobUrl: data.jobUrl ?? null,
       description: data.description ?? null,
@@ -101,6 +138,12 @@ export async function POST(request: Request) {
     },
     include: {
       company: true,
+      usedResume: {
+        select: {
+          id: true,
+          title: true,
+        },
+      },
     },
   });
 
