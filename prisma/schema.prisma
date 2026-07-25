@@ -21,6 +21,7 @@ enum OpportunityType {
   RESEARCH
   PROFESSOR_OUTREACH
   LAB
+  OTHER_OUTREACH
 }
 
 enum OpportunityOutcome {
