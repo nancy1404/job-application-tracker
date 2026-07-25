@@ -80,6 +80,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   const data = parsed.data;
   const companyId = data.companyId ?? existingApplication.companyId;
   const appliedDateValue = data.appliedDate;
+  const outcomeDateValue = data.outcomeDate;
 
   if (companyId) {
     const company = await prisma.company.findFirst({
@@ -104,6 +105,19 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       jobUrl: data.jobUrl === undefined ? undefined : data.jobUrl ?? null,
       description: data.description === undefined ? undefined : data.description ?? null,
       status: data.status,
+      opportunityType: data.opportunityType,
+      contactName: data.contactName === undefined ? undefined : data.contactName ?? null,
+      contactEmail: data.contactEmail === undefined ? undefined : data.contactEmail ?? null,
+      outcome: data.outcome,
+      outcomeDate:
+        outcomeDateValue === undefined
+          ? undefined
+          : outcomeDateValue === null
+            ? null
+            : outcomeDateValue instanceof Date || typeof outcomeDateValue === 'string'
+              ? parseDate(outcomeDateValue)
+              : undefined,
+      outcomeNotes: data.outcomeNotes === undefined ? undefined : data.outcomeNotes ?? null,
       appliedDate:
         appliedDateValue === undefined
           ? undefined
