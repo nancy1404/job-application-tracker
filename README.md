@@ -1,6 +1,6 @@
 # Job Application Tracker with AI Match Insights
 
-Full-stack Next.js portfolio project for tracking job applications, managing resume versions, scheduling reminders, and generating AI match insights.
+Full-stack Next.js project for tracking opportunities, managing resume versions, scheduling reminders, and optionally generating AI match insights.
 
 ## AI-Assisted Development Workflow
 
@@ -10,12 +10,12 @@ See [AI_DEVELOPMENT_PROMPTS.md](./AI_DEVELOPMENT_PROMPTS.md) for the prompt sequ
 
 ## Current Features
 - Credentials authentication with NextAuth v4 (`/auth/signup`, `/auth/signin`)
-- Applications CRUD (UI + API)
+- Opportunity tracking UI and API for jobs, internships, research/lab opportunities, and other outreach
 - Companies API with duplicate protection per user
 - Resumes CRUD (UI + API) with one default resume per user
 - Reminders CRUD (UI + API) with optional linked application
 - Dashboard summary (applications, resumes, reminders)
-- AI insight generation (UI + API) with persisted upserted results
+- Optional AI insight generation (UI + API) with persisted upserted results
 - Ownership checks across user-scoped API data
 
 ## Tech Stack
@@ -93,4 +93,5 @@ Notes:
 ## Project Notes
 - Data is user-scoped: routes verify session ownership before read/update/delete.
 - Schema lives in `prisma/schema.prisma` and is not modified by runtime logic.
+- Internal route names still use `/applications` for compatibility, even though the UI and data model now support broader opportunity tracking.
 - AI insight rows are upserted by `(applicationId, resumeId)` uniqueness.

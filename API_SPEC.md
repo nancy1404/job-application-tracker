@@ -3,6 +3,8 @@
 ## Overview
 The backend uses Next.js Route Handlers. All user data routes are ownership-scoped: a signed-in user can only read and mutate their own records.
 
+Note: the app now tracks broader opportunities, but the internal route names remain `/applications` for compatibility.
+
 ## Authentication
 - Auth route: `/api/auth/[...nextauth]` (NextAuth v4)
 - Custom signup route: `POST /api/auth/signup`
@@ -44,7 +46,7 @@ NextAuth v4 route handler for credentials sign-in/sign-out/session.
 Return current user's applications.
 
 ### POST /api/applications
-Create an application for current user.
+Create an opportunity record for current user.
 
 Request body:
 ```json
@@ -54,6 +56,12 @@ Request body:
   "jobUrl": "https://example.com/jobs/1",
   "description": "Build UI components for a SaaS product.",
   "status": "SAVED",
+  "opportunityType": "JOB",
+  "contactName": "Jordan Lee",
+  "contactEmail": "jordan@example.com",
+  "outcome": "ACTIVE",
+  "outcomeDate": "2026-06-20T10:00:00.000Z",
+  "outcomeNotes": "Followed up after the interview.",
   "appliedDate": "2026-06-20T10:00:00.000Z",
   "notes": "Follow up next week."
 }
@@ -63,10 +71,10 @@ Request body:
 Return one user-owned application.
 
 ### PATCH /api/applications/[id]
-Update one user-owned application.
+Update one user-owned opportunity record.
 
 ### DELETE /api/applications/[id]
-Delete one user-owned application.
+Delete one user-owned opportunity record.
 
 ---
 
