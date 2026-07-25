@@ -246,6 +246,9 @@ export default function DashboardPage() {
           <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Hello, {greetingTarget}</p>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Dashboard</h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{todayLabel}</p>
+          <p className="mt-2 max-w-xl text-xs italic text-slate-500 dark:text-slate-400">
+            "It always seems impossible until it&apos;s done."
+          </p>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Here’s your opportunity activity for today.</p>
         </header>
 
