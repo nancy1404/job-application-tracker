@@ -221,7 +221,7 @@ export default function DashboardPage() {
   }).format(new Date());
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <div className="mx-auto max-w-6xl px-6 py-10">
         {authStatus === 'loading' ? (
           <p className="mb-4 text-sm text-slate-600">Loading dashboard...</p>
