@@ -42,9 +42,13 @@ enum ReminderStatus {
 model User {
   id            String    @id @default(cuid())
   name          String?
+  preferredName String?
   email         String    @unique
   emailVerified DateTime?
   image         String?
+  githubUrl     String?
+  linkedinUrl   String?
+  portfolioUrl  String?
   passwordHash  String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
