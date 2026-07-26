@@ -1,97 +1,135 @@
-# Job Application Tracker with AI Match Insights
+# Application Tracker (Next.js Capstone)
 
-Full-stack Next.js project for tracking opportunities, managing resume versions, scheduling reminders, and optionally generating AI match insights.
+A full-stack Application Tracker for managing opportunities across jobs, internships, research/lab roles, and outreach.
 
-## AI-Assisted Development Workflow
+The app focuses on practical workflow tracking:
+- current stage tracking with status
+- final/archive tracking with outcome
+- resume usage, follow-up reminders, and dashboard progress visibility
 
-This project was developed as a course-guided capstone inspired by Coursera's "Vibe Coding with GitHub Copilot and AI" by Edureka. It uses a structured AI-assisted workflow with GitHub Copilot Pro, where the development process was broken into small phases with prompts guiding implementation, validation, documentation, CI, and deployment.
+## Product Purpose
 
-See [AI_DEVELOPMENT_PROMPTS.md](./AI_DEVELOPMENT_PROMPTS.md) for the prompt sequence, development phases, and reflection.
+This project helps users organize opportunity pipelines in one place, from initial interest to final outcomes.
 
-## Current Features
-- Credentials authentication with NextAuth v4 (`/auth/signup`, `/auth/signin`)
-- Opportunity tracking UI and API for jobs, internships, research/lab opportunities, and other outreach
-- Companies API with duplicate protection per user
-- Resumes CRUD (UI + API) with one default resume per user
-- Reminders CRUD (UI + API) with optional linked application
-- Dashboard summary (applications, resumes, reminders)
-- Optional AI insight generation (UI + API) with persisted upserted results
-- Ownership checks across user-scoped API data
+It is designed as a portfolio-ready capstone with strong fundamentals:
+- user authentication
+- user-scoped CRUD APIs
+- production-oriented deployment flow (GitHub + Vercel)
+
+## Main Features
+
+- Auth: credential signup/signin with NextAuth v4
+- Opportunities: create/update/delete opportunities in the Applications page
+- Opportunity types: Job, Internship, Research/Lab, Other Outreach (with compatibility mapping for legacy values)
+- Status workflow (current stage): INTERESTED, SAVED, APPLIED, INTERVIEW, OFFER
+- Outcome workflow (final/archive): ACTIVE, ACCEPTED, REJECTED, NO_RESPONSE, WITHDRAWN, ARCHIVED
+- Active vs Final sections: split by outcome (not status)
+- Search + filters on opportunities: title/company/contact + type/status/outcome
+- Dashboard summaries: status, outcomes, reminders, and week/month progress metrics
+- Resume/CV library: manage resumes and optionally link one resume used per opportunity
+- Reminders/follow-ups: due tracking with overdue/upcoming visibility
+- Dark mode support across core pages
+- Optional AI match insights per opportunity + resume pair
 
 ## Tech Stack
-- Next.js App Router + TypeScript
-- NextAuth v4 (credentials)
-- Prisma 7 + Neon PostgreSQL (`@prisma/adapter-pg` + `pg`)
+
+- Next.js 14 App Router + TypeScript
 - Tailwind CSS
+- Prisma ORM + Neon PostgreSQL
+- NextAuth v4 (credentials)
 - Zod validation
-- OpenAI API (optional in local development)
+- GitHub Actions (CI) + Vercel deployment
+- OpenAI API (optional feature)
 
-## Environment Variables
-Create a local `.env` file from `.env.example` and set:
+## High-Level Data Model
 
-```env
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require"
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="your-random-secret"
-OPENAI_API_KEY="your-openai-api-key"
-```
+Core entities:
+- User
+- JobApplication (internal model name used for broad opportunity tracking)
+- Company
+- Resume
+- Reminder
+- AiInsight
 
-Notes:
-- `OPENAI_API_KEY` is optional for general app usage.
-- AI generation requires `OPENAI_API_KEY`; without it, the app safely returns `OPENAI_API_KEY is not configured.`
-- Never commit `.env` to source control.
+Relationship overview:
+- A user owns many applications, resumes, reminders, and companies.
+- An application can link to one company and one used resume.
+- Reminders can be linked to an application.
+- AI insights are stored per application + resume pair.
 
 ## Local Setup
+
+1. Install dependencies
+
 ```bash
 npm install
+```
+
+2. Create local environment file
+
+```bash
 cp .env.example .env
+```
+
+3. Generate Prisma client and run migrations
+
+```bash
 npx prisma generate
 npx prisma migrate dev
+```
+
+4. Start development server
+
+```bash
 npm run dev
 ```
 
-## Build Check
+5. Production build check
+
 ```bash
 npm run build
 ```
 
-## Deploy to Vercel
-1. Push the repository to GitHub.
-2. Create a new Vercel project and import this repository.
-3. In Vercel Project Settings, configure environment variables:
-	- `DATABASE_URL`
-	- `NEXTAUTH_URL`
-	- `NEXTAUTH_SECRET`
-	- `OPENAI_API_KEY` (optional)
-4. Use the Neon production connection string for `DATABASE_URL`.
-5. Set `NEXTAUTH_URL` to your deployed Vercel URL (for example, `https://your-app.vercel.app`).
-6. Deploy.
+## Environment Variables
+
+Set these in `.env` (never commit secrets):
+
+```env
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require"
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="replace-with-a-strong-random-secret"
+OPENAI_API_KEY="optional"
+```
 
 Notes:
-- The app works without `OPENAI_API_KEY`, but real AI insight generation requires it.
-- Never commit `.env`.
+- `OPENAI_API_KEY` is optional for the main product workflow.
+- Without `OPENAI_API_KEY`, AI insight generation is unavailable, but the rest of the app works normally.
 
-## Production Checklist
-- `npm run build` passes locally.
-- Prisma migrations are applied to production (`npx prisma migrate deploy`).
-- Vercel environment variables are configured.
-- Signup/signin is tested on the deployed app.
-- Applications, resumes, and reminders flows are tested on the deployed app.
+## AI Feature Scope
 
-## Implemented API Surface
-- `POST /api/auth/signup`
-- `/api/auth/[...nextauth]`
-- `/api/applications`
-- `/api/applications/[id]`
-- `/api/companies`
-- `/api/resumes`
-- `/api/resumes/[id]`
-- `/api/reminders`
-- `/api/reminders/[id]`
-- `POST /api/ai-insights`
+AI is an optional enhancement, not the core product.
 
-## Project Notes
-- Data is user-scoped: routes verify session ownership before read/update/delete.
-- Schema lives in `prisma/schema.prisma` and is not modified by runtime logic.
-- Internal route names still use `/applications` for compatibility, even though the UI and data model now support broader opportunity tracking.
-- AI insight rows are upserted by `(applicationId, resumeId)` uniqueness.
+Core product value is opportunity management (status/outcome, resumes, reminders, dashboard tracking).
+AI match insights can be generated on demand when an API key is configured.
+
+## Deployment (Vercel)
+
+- Push to GitHub (main branch)
+- Import the repo in Vercel
+- Configure env vars in Vercel Project Settings:
+  - `DATABASE_URL`
+  - `NEXTAUTH_URL`
+  - `NEXTAUTH_SECRET`
+  - `OPENAI_API_KEY` (optional)
+- Use Neon production connection string for `DATABASE_URL`
+- Set `NEXTAUTH_URL` to the deployed Vercel URL
+
+## Portfolio Summary
+
+This capstone demonstrates end-to-end product development with Next.js:
+- authenticated multi-entity CRUD
+- clear status/outcome workflow design
+- practical dashboard and reminder UX
+- production deployment and CI-ready project structure
+
+It highlights building a focused, user-friendly tracking product with optional AI augmentation rather than AI-first dependency.
