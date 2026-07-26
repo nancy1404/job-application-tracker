@@ -15,7 +15,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <div className="mx-auto flex max-w-7xl flex-col lg:flex-row">
         <aside className="w-full border-b border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 lg:w-56 lg:border-b-0 lg:border-r">
           <div className="mb-5">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Job Tracker</h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Application Tracker</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">AI match insights</p>
           </div>
 
