@@ -26,7 +26,10 @@ It is designed as a portfolio-ready capstone with strong fundamentals:
 - Active vs Final sections: split by outcome (not status)
 - Search + filters on opportunities: title/company/contact + type/status/outcome
 - Dashboard summaries: status, outcomes, reminders, and week/month progress metrics
+- Profile page: edit formal display name, preferred name, and personal profile links
+- Dashboard greeting: uses preferred name first when available
 - Resume/CV library: manage resumes and optionally link one resume used per opportunity
+- Profile links: save GitHub, LinkedIn, and portfolio URLs
 - Reminders/follow-ups: due tracking with overdue/upcoming visibility
 - Dark mode support across core pages
 - Optional AI match insights per opportunity + resume pair
@@ -110,7 +113,7 @@ Notes:
 AI is an optional enhancement, not the core product.
 
 Core product value is opportunity management (status/outcome, resumes, reminders, dashboard tracking).
-AI match insights can be generated on demand when an API key is configured.
+Optional AI match insights are available after sign-in when an API key is configured.
 
 ## Deployment (Vercel)
 

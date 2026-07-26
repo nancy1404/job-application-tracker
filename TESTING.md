@@ -126,6 +126,8 @@ Also test reminders linked to opportunities and reminders not linked.
 ## 6) Dashboard Checks
 
 - [ ] Greeting, date, and quote render correctly
+- [ ] Greeting uses preferred name when set
+- [ ] Greeting falls back safely when preferred name is empty
 - [ ] Top reminder alert appears only when overdue or due-today reminders exist
 - [ ] Alert message counts are correct (overdue and due today)
 - [ ] Alert link opens Reminders page
@@ -159,7 +161,19 @@ Also test reminders linked to opportunities and reminders not linked.
 - [ ] Default resume behavior is correct
 - [ ] Resume can be selected as "Resume/CV used" on opportunities
 
-## 9) Reminders Page Checks
+## 9) Profile Page Checks
+
+- [ ] Open Profile page from the dashboard navigation
+- [ ] Email is visible and read-only
+- [ ] Edit display name and save successfully
+- [ ] Edit preferred name and save successfully
+- [ ] Save GitHub URL successfully
+- [ ] Save LinkedIn URL successfully
+- [ ] Save portfolio URL successfully
+- [ ] Reload the page and confirm all saved values persist
+- [ ] Return to dashboard and confirm greeting uses preferred name
+
+## 10) Reminders Page Checks
 
 - [ ] Create reminder works
 - [ ] Edit reminder works
@@ -168,15 +182,16 @@ Also test reminders linked to opportunities and reminders not linked.
 - [ ] Timing labels are correct (overdue, due today, upcoming, completed)
 - [ ] Sorting/visibility feels correct for pending vs completed
 
-## 10) Dark Mode Checks
+## 11) Dark Mode Checks
 
 - [ ] Toggle works on dashboard layout
 - [ ] Dashboard remains readable in dark mode
 - [ ] Applications page controls and cards are readable
+- [ ] Profile page form and read-only email field remain readable
 - [ ] Reminders page is readable
 - [ ] Auth and resume pages remain readable
 
-## 11) Mobile/Responsive Checks
+## 12) Mobile/Responsive Checks
 
 Use browser responsive mode (for example 390px width):
 
@@ -184,9 +199,10 @@ Use browser responsive mode (for example 390px width):
 - [ ] Donut and legend remain readable
 - [ ] Reminder alert banner wraps cleanly
 - [ ] Applications search/filter controls stack without overlap
+- [ ] Profile page form fields stack cleanly without horizontal scrolling
 - [ ] Forms are usable without horizontal scrolling
 
-## 12) Optional AI Match Insights Checks
+## 13) Optional AI Match Insights Checks
 
 Only if `OPENAI_API_KEY` is configured.
 
@@ -199,7 +215,7 @@ If key is missing:
 - [ ] App remains usable for all non-AI features
 - [ ] AI feature shows a clear, safe error message
 
-## 13) Pre-Push Checklist
+## 14) Pre-Push Checklist
 
 Before pushing to GitHub:
 
