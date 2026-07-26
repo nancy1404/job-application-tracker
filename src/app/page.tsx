@@ -5,10 +5,10 @@ export default function HomePage() {
     <main className="min-h-screen bg-slate-50">
       <div className="mx-auto flex min-h-screen max-w-md items-center px-6 py-12">
         <section className="w-full rounded-2xl border bg-white p-8 shadow-sm">
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Job Application Tracker</h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Application Tracker</h1>
           <p className="mt-3 text-sm leading-6 text-slate-600">
-            Keep your job search organized by tracking applications and outreach, managing resumes, and
-            setting reminders.
+            Keep your applications and outreach organized by tracking opportunities, managing resumes, and setting
+            follow-up reminders.
           </p>
 
           <div className="mt-6 space-y-3">
@@ -27,12 +27,12 @@ export default function HomePage() {
           </div>
 
           <ul className="mt-6 space-y-2 text-sm text-slate-700">
-            <li>Track applications</li>
+            <li>Track opportunities</li>
             <li>Manage resumes</li>
             <li>Set reminders</li>
           </ul>
 
-          <p className="mt-5 text-xs text-slate-500">Optional AI match insights are available after sign-in.</p>
+          <p className="mt-5 text-xs text-slate-500">Optional AI match insights are also available after sign-in.</p>
         </section>
       </div>
     </main>
