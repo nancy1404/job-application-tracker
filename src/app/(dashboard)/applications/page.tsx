@@ -195,6 +195,10 @@ export default function ApplicationsPage() {
   const [reminderMessages, setReminderMessages] = useState<Record<string, string>>({});
   const [followUpTimingById, setFollowUpTimingById] = useState<Record<string, FollowUpTimingOption>>({});
   const [followUpCustomDateTimeById, setFollowUpCustomDateTimeById] = useState<Record<string, string>>({});
+  const [searchQuery, setSearchQuery] = useState('');
+  const [opportunityTypeFilter, setOpportunityTypeFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [outcomeFilter, setOutcomeFilter] = useState('ALL');
 
   async function loadData() {
     setIsLoading(true);
@@ -549,8 +553,65 @@ export default function ApplicationsPage() {
     }
   }
 
-  const activeApplications = applications.filter(isActiveOpportunity);
-  const archivedApplications = applications.filter((application) => !isActiveOpportunity(application));
+  function clearFilters() {
+    setSearchQuery('');
+    setOpportunityTypeFilter('ALL');
+    setStatusFilter('ALL');
+    setOutcomeFilter('ALL');
+  }
+
+  function matchesSearch(application: Application, query: string) {
+    if (!query) {
+      return true;
+    }
+
+    const normalizedQuery = query.trim().toLowerCase();
+
+    if (!normalizedQuery) {
+      return true;
+    }
+
+    const fields = [application.title, application.company?.name, application.contactName, application.contactEmail]
+      .filter((value): value is string => Boolean(value))
+      .map((value) => value.toLowerCase());
+
+    return fields.some((value) => value.includes(normalizedQuery));
+  }
+
+  function matchesOpportunityType(application: Application) {
+    if (opportunityTypeFilter === 'ALL') {
+      return true;
+    }
+
+    return normalizeOpportunityTypeForForm(application.opportunityType) === opportunityTypeFilter;
+  }
+
+  function matchesStatus(application: Application) {
+    if (statusFilter === 'ALL') {
+      return true;
+    }
+
+    return application.status === statusFilter;
+  }
+
+  function matchesOutcome(application: Application) {
+    if (outcomeFilter === 'ALL') {
+      return true;
+    }
+
+    return (application.outcome ?? 'ACTIVE') === outcomeFilter;
+  }
+
+  const filteredApplications = applications.filter(
+    (application) =>
+      matchesSearch(application, searchQuery) &&
+      matchesOpportunityType(application) &&
+      matchesStatus(application) &&
+      matchesOutcome(application)
+  );
+
+  const activeApplications = filteredApplications.filter(isActiveOpportunity);
+  const archivedApplications = filteredApplications.filter((application) => !isActiveOpportunity(application));
 
   function renderOpportunityCard(application: Application) {
     const celebrationMessage = getCelebrationMessage(application);
@@ -1054,7 +1115,93 @@ export default function ApplicationsPage() {
           <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center justify-between gap-4">
               <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Your opportunities</h2>
-              <span className="text-sm text-slate-500 dark:text-slate-400">{applications.length} total</span>
+              <span className="text-sm text-slate-500 dark:text-slate-400">
+                {filteredApplications.length} shown / {applications.length} total
+              </span>
+            </div>
+
+            <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200" htmlFor="searchOpportunities">
+                    Search
+                  </label>
+                  <input
+                    id="searchOpportunities"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder="Search by title, company, contact name, or email"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200" htmlFor="filterOpportunityType">
+                    Opportunity type
+                  </label>
+                  <select
+                    id="filterOpportunityType"
+                    value={opportunityTypeFilter}
+                    onChange={(event) => setOpportunityTypeFilter(event.target.value)}
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                  >
+                    <option value="ALL">All types</option>
+                    {opportunityTypeOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200" htmlFor="filterStatus">
+                    Status
+                  </label>
+                  <select
+                    id="filterStatus"
+                    value={statusFilter}
+                    onChange={(event) => setStatusFilter(event.target.value)}
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                  >
+                    <option value="ALL">All statuses</option>
+                    {statusOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200" htmlFor="filterOutcome">
+                    Outcome
+                  </label>
+                  <select
+                    id="filterOutcome"
+                    value={outcomeFilter}
+                    onChange={(event) => setOutcomeFilter(event.target.value)}
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                  >
+                    <option value="ALL">All outcomes</option>
+                    {outcomeOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex items-end">
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 dark:border-slate-600 dark:text-slate-200"
+                  >
+                    Clear filters
+                  </button>
+                </div>
+              </div>
             </div>
 
             {isLoading ? <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">Loading opportunities...</p> : null}
@@ -1062,6 +1209,12 @@ export default function ApplicationsPage() {
 
             {!isLoading && !loadError && applications.length === 0 ? (
               <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">No opportunities yet.</p>
+            ) : null}
+
+            {!isLoading && !loadError && applications.length > 0 && filteredApplications.length === 0 ? (
+              <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">
+                No opportunities match your current search or filters.
+              </p>
             ) : null}
 
             <div className="mt-4 space-y-6">
