@@ -82,6 +82,26 @@ export const createAiInsightRequestSchema = z.object({
   resumeId: z.string().trim().min(1, 'Resume is required'),
 });
 
+export const updateProfileSchema = z.object({
+  name: z.preprocess((value) => {
+    if (typeof value === 'string' && value.trim() === '') {
+      return undefined;
+    }
+
+    return value;
+  }, z.string().trim().max(80, 'Name must be 80 characters or fewer').optional()),
+  preferredName: z.preprocess((value) => {
+    if (typeof value === 'string' && value.trim() === '') {
+      return undefined;
+    }
+
+    return value;
+  }, z.string().trim().max(50, 'Preferred name must be 50 characters or fewer').optional()),
+  githubUrl: optionalUrlString,
+  linkedinUrl: optionalUrlString,
+  portfolioUrl: optionalUrlString,
+});
+
 export type CreateApplicationInput = z.infer<typeof createApplicationSchema>;
 export type UpdateApplicationInput = z.infer<typeof updateApplicationSchema>;
 export type CreateResumeInput = z.infer<typeof createResumeSchema>;
@@ -91,3 +111,4 @@ export type UpdateCompanyInput = z.infer<typeof updateCompanySchema>;
 export type CreateReminderInput = z.infer<typeof createReminderSchema>;
 export type UpdateReminderInput = z.infer<typeof updateReminderSchema>;
 export type CreateAiInsightRequestInput = z.infer<typeof createAiInsightRequestSchema>;
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
