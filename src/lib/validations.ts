@@ -1,4 +1,4 @@
-import { ApplicationStatus, OpportunityOutcome, OpportunityType, ReminderStatus } from '@prisma/client';
+import { ApplicationStatus, OpportunityOutcome, OpportunityType, ReminderStatus, WeeklyGoalType } from '@prisma/client';
 import { z } from 'zod';
 
 const optionalEmptyString = z.preprocess((value) => {
@@ -82,6 +82,33 @@ export const createAiInsightRequestSchema = z.object({
   resumeId: z.string().trim().min(1, 'Resume is required'),
 });
 
+export const weeklyGoalInputSchema = z.object({
+  goalType: z.nativeEnum(WeeklyGoalType),
+  targetCount: z.coerce.number().int().min(1, 'Target count must be at least 1').max(99, 'Target count must be 99 or less'),
+});
+
+export const weeklyGoalsUpsertSchema = z
+  .object({
+    weekStartDate: z.coerce.date(),
+    goals: z.array(weeklyGoalInputSchema).min(1, 'At least one goal is required').max(3, 'No more than 3 goals are allowed'),
+  })
+  .superRefine((value, context) => {
+    const seenGoalTypes = new Set<WeeklyGoalType>();
+
+    value.goals.forEach((goal, index) => {
+      if (seenGoalTypes.has(goal.goalType)) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Duplicate goal types are not allowed.',
+          path: ['goals', index, 'goalType'],
+        });
+        return;
+      }
+
+      seenGoalTypes.add(goal.goalType);
+    });
+  });
+
 export const updateProfileSchema = z.object({
   name: z.preprocess((value) => {
     if (typeof value === 'string' && value.trim() === '') {
@@ -111,4 +138,6 @@ export type UpdateCompanyInput = z.infer<typeof updateCompanySchema>;
 export type CreateReminderInput = z.infer<typeof createReminderSchema>;
 export type UpdateReminderInput = z.infer<typeof updateReminderSchema>;
 export type CreateAiInsightRequestInput = z.infer<typeof createAiInsightRequestSchema>;
+export type WeeklyGoalInput = z.infer<typeof weeklyGoalInputSchema>;
+export type WeeklyGoalsUpsertInput = z.infer<typeof weeklyGoalsUpsertSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
