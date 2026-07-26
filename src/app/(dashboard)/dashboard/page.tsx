@@ -136,6 +136,12 @@ function formatDateTime(value?: string) {
   }).format(new Date(value));
 }
 
+function getStartOfDay(value: Date) {
+  const start = new Date(value);
+  start.setHours(0, 0, 0, 0);
+  return start;
+}
+
 function toValidDate(value?: string) {
   if (!value) {
     return null;
@@ -269,6 +275,23 @@ export default function DashboardPage() {
   const defaultResume = resumes.find((resume) => resume.isDefault);
   const pendingReminders = reminders.filter((reminder) => reminder.status === 'PENDING');
   const now = new Date();
+  const startOfToday = getStartOfDay(now);
+  const startOfTomorrow = new Date(startOfToday);
+  startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
+
+  const overdueAlertReminders = reminders.filter(
+    (reminder) => reminder.status === 'PENDING' && new Date(reminder.dueDate) < startOfToday
+  );
+  const dueTodayAlertReminders = reminders.filter((reminder) => {
+    if (reminder.status !== 'PENDING') {
+      return false;
+    }
+
+    const dueDate = new Date(reminder.dueDate);
+    return dueDate >= startOfToday && dueDate < startOfTomorrow;
+  });
+
+  const hasReminderAlert = overdueAlertReminders.length > 0 || dueTodayAlertReminders.length > 0;
   const weekStart = new Date(now);
   const dayIndex = (weekStart.getDay() + 6) % 7;
   weekStart.setDate(weekStart.getDate() - dayIndex);
@@ -391,6 +414,34 @@ export default function DashboardPage() {
           </p>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Here’s your opportunity activity for today.</p>
         </header>
+
+        {hasReminderAlert ? (
+          <section className="mb-6 rounded-xl border border-amber-200 bg-amber-50/90 p-4 text-sm dark:border-amber-900/60 dark:bg-amber-950/30">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-amber-900 dark:text-amber-100">
+                {overdueAlertReminders.length > 0 ? (
+                  <>
+                    You have {overdueAlertReminders.length} overdue follow-up
+                    {overdueAlertReminders.length === 1 ? '' : 's'}
+                    {dueTodayAlertReminders.length > 0 ? ' and ' : '.'}
+                  </>
+                ) : null}
+                {dueTodayAlertReminders.length > 0 ? (
+                  <>
+                    {overdueAlertReminders.length > 0 ? `${dueTodayAlertReminders.length} follow-up${dueTodayAlertReminders.length === 1 ? '' : 's'} due today.` : `You have ${dueTodayAlertReminders.length} follow-up${dueTodayAlertReminders.length === 1 ? '' : 's'} due today.`}
+                  </>
+                ) : null}
+              </p>
+
+              <Link
+                href="/reminders"
+                className="inline-flex w-fit items-center rounded-md border border-amber-300 px-3 py-1.5 text-xs font-medium text-amber-900 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-100 dark:hover:bg-amber-900/40"
+              >
+                Open reminders
+              </Link>
+            </div>
+          </section>
+        ) : null}
 
         {isLoading ? <p className="text-sm text-slate-600 dark:text-slate-300">Loading dashboard...</p> : null}
         {loadError ? <p className="text-sm text-red-600">{loadError}</p> : null}
