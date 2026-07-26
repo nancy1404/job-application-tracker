@@ -138,6 +138,20 @@ Also test reminders linked to opportunities and reminders not linked.
 - [ ] Outcome summary still shows final/archive outcomes
 - [ ] Progress section updates week/month metrics based on data
 
+## 6.1) Weekly Goals Smoke Tests
+
+- [ ] Set weekly goals for all goal types:
+  - Add opportunities
+  - Apply to opportunities
+  - Complete follow-ups
+- [ ] Refresh the page and confirm weekly goals persist
+- [ ] Create an opportunity and confirm "Add opportunities" progress updates
+- [ ] Set `appliedDate` on an opportunity and confirm "Apply to opportunities" progress updates
+- [ ] Complete a reminder and confirm "Complete follow-ups" progress updates
+- [ ] Confirm Weekly Goals card empty state appears when goals are not set
+- [ ] Confirm Weekly Goals card is readable and usable in dark mode
+- [ ] Confirm Weekly Goals card layout and inline goal editing work on mobile widths
+
 ## 7) Applications/Opportunities Page Checks
 
 - [ ] Create opportunity works

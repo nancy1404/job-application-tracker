@@ -25,7 +25,8 @@ It is designed as a portfolio-ready capstone with strong fundamentals:
 - Outcome workflow (final/archive): ACTIVE, ACCEPTED, REJECTED, NO_RESPONSE, WITHDRAWN, ARCHIVED
 - Active vs Final sections: split by outcome (not status)
 - Search + filters on opportunities: title/company/contact + type/status/outcome
-- Dashboard summaries: status, outcomes, reminders, and week/month progress metrics
+- Dashboard summaries: status, outcomes, reminders, week/month progress metrics, and weekly goal progress
+- Weekly goals: set targets for adding opportunities, applying to opportunities, and completing follow-ups; progress is shown on the dashboard card
 - Profile page: edit formal display name, preferred name, and personal profile links
 - Dashboard greeting: uses preferred name first when available
 - Resume/CV library: manage resumes and optionally link one resume used per opportunity
