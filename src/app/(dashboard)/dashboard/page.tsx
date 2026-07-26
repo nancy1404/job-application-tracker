@@ -52,6 +52,8 @@ const statusOptions = [
   { value: 'OFFER', label: 'Offer' },
 ];
 
+const statusColors = ['#0f766e', '#2563eb', '#0ea5e9', '#8b5cf6', '#f59e0b'];
+
 const opportunityTypeBuckets = [
   { key: 'JOB', label: 'Jobs' },
   { key: 'INTERNSHIP', label: 'Internships' },
@@ -159,6 +161,25 @@ function getPercent(value: number, total: number) {
   return Math.min(100, Math.round((value / total) * 100));
 }
 
+function buildStatusDonutGradient(values: number[]) {
+  const total = values.reduce((sum, value) => sum + value, 0);
+
+  if (total <= 0) {
+    return 'conic-gradient(#e2e8f0 0deg 360deg)';
+  }
+
+  let startAngle = 0;
+  const segments = values.map((value, index) => {
+    const portion = (value / total) * 360;
+    const endAngle = startAngle + portion;
+    const segment = `${statusColors[index]} ${startAngle}deg ${endAngle}deg`;
+    startAngle = endAngle;
+    return segment;
+  });
+
+  return `conic-gradient(${segments.join(', ')})`;
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [applications, setApplications] = useState<Application[]>([]);
@@ -224,10 +245,16 @@ export default function DashboardPage() {
     void loadData();
   }, [router]);
 
-  const applicationsByStatus = statusOptions.reduce<Record<string, number>>((counts, statusOption) => {
-    counts[statusOption.value] = applications.filter((application) => application.status === statusOption.value).length;
-    return counts;
-  }, {});
+  const activeOpportunityCount = applications.filter((application) => isActiveOutcome(application.outcome)).length;
+  const statusBreakdown = statusOptions.map((statusOption, index) => ({
+    ...statusOption,
+    count: applications
+      .filter((application) => isActiveOutcome(application.outcome) && application.status === statusOption.value)
+      .length,
+    color: statusColors[index],
+  }));
+  const totalWorkflowStatusCount = statusBreakdown.reduce((sum, item) => sum + item.count, 0);
+  const donutBackground = buildStatusDonutGradient(statusBreakdown.map((item) => item.count));
 
   const opportunityTypeCounts = opportunityTypeBuckets.reduce<Record<string, number>>((counts, bucket) => {
     counts[bucket.key] = applications.filter((application) => getOpportunityTypeBucket(application.opportunityType) === bucket.key).length;
@@ -378,14 +405,35 @@ export default function DashboardPage() {
 
               <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                 <p className="text-sm text-slate-500 dark:text-slate-400">Status summary (current stage)</p>
-                <div className="mt-3 space-y-1 text-sm text-slate-700 dark:text-slate-200">
-                  {statusOptions.map((statusOption) => (
-                    <div key={statusOption.value} className="flex items-center justify-between gap-3">
-                      <span>{statusOption.label}</span>
-                      <span>{applicationsByStatus[statusOption.value] ?? 0}</span>
+                {activeOpportunityCount === 0 ? (
+                  <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
+                    No active opportunities yet. Add one to see status distribution.
+                  </p>
+                ) : (
+                  <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
+                    <div className="relative mx-auto h-36 w-36 shrink-0 rounded-full" style={{ background: donutBackground }}>
+                      <div className="absolute inset-4 flex flex-col items-center justify-center rounded-full bg-white text-center dark:bg-slate-900">
+                        <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{activeOpportunityCount}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">Active total</p>
+                      </div>
                     </div>
-                  ))}
-                </div>
+
+                    <div className="w-full space-y-1.5 text-sm">
+                      {statusBreakdown.map((item) => (
+                        <div key={item.value} className="flex items-center justify-between gap-3 text-slate-700 dark:text-slate-200">
+                          <div className="flex items-center gap-2">
+                            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                            <span>{item.label}</span>
+                          </div>
+                          <span>{item.count}</span>
+                        </div>
+                      ))}
+                      <p className="pt-1 text-xs text-slate-500 dark:text-slate-400">
+                        Workflow statuses shown: {totalWorkflowStatusCount} opportunities.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
