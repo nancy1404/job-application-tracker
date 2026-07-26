@@ -7,6 +7,7 @@ const navItems = [
   { href: '/applications', label: 'Applications' },
   { href: '/resumes', label: 'Resumes' },
   { href: '/reminders', label: 'Reminders' },
+  { href: '/profile', label: 'Profile' },
 ];
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
