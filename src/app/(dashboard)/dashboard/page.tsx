@@ -44,6 +44,12 @@ type SessionUser = {
   email?: string | null;
 };
 
+type ProfileGreeting = {
+  name?: string | null;
+  preferredName?: string | null;
+  email?: string | null;
+};
+
 const statusOptions = [
   { value: 'INTERESTED', label: 'Interested' },
   { value: 'SAVED', label: 'Saved' },
@@ -194,6 +200,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
+  const [profileGreeting, setProfileGreeting] = useState<ProfileGreeting | null>(null);
   const [authStatus, setAuthStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
 
   useEffect(() => {
@@ -216,10 +223,11 @@ export default function DashboardPage() {
         setSessionUser(sessionData.user);
         setAuthStatus('authenticated');
 
-        const [applicationsResponse, resumesResponse, remindersResponse] = await Promise.all([
+        const [applicationsResponse, resumesResponse, remindersResponse, profileResponse] = await Promise.all([
           fetch('/api/applications'),
           fetch('/api/resumes'),
           fetch('/api/reminders'),
+          fetch('/api/profile'),
         ]);
 
         if (!applicationsResponse.ok) {
@@ -232,6 +240,13 @@ export default function DashboardPage() {
 
         if (!remindersResponse.ok) {
           throw new Error('Failed to load reminders.');
+        }
+
+        if (profileResponse.ok) {
+          const profileData = (await profileResponse.json()) as { profile?: ProfileGreeting };
+          setProfileGreeting(profileData.profile ?? null);
+        } else {
+          setProfileGreeting(null);
         }
 
         const applicationsData = (await applicationsResponse.json()) as { applications: Application[] };
@@ -390,7 +405,13 @@ export default function DashboardPage() {
     })
     .slice(0, 3);
 
-  const greetingTarget = sessionUser?.name?.trim() || sessionUser?.email?.trim() || 'Welcome back';
+  const greetingTarget =
+    profileGreeting?.preferredName?.trim() ||
+    profileGreeting?.name?.trim() ||
+    sessionUser?.name?.trim() ||
+    profileGreeting?.email?.trim() ||
+    sessionUser?.email?.trim() ||
+    'Welcome back';
   const todayLabel = new Intl.DateTimeFormat('en-US', {
     weekday: 'long',
     month: 'long',
