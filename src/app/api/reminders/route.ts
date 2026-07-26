@@ -134,6 +134,7 @@ export async function POST(request: Request) {
       title: data.title,
       dueDate,
       status,
+      completedAt: status === 'COMPLETED' ? new Date() : null,
       notes,
     },
     include: {

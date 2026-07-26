@@ -104,6 +104,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     title?: string;
     dueDate?: Date;
     status?: ReminderStatusValue;
+    completedAt?: Date | null;
     notes?: string | null;
     applicationId?: string | null;
   } = {};
@@ -129,7 +130,16 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       typeof data.status === 'string' &&
       REMINDER_STATUSES.includes(data.status as ReminderStatusValue)
     ) {
-      updateData.status = data.status as ReminderStatusValue;
+      const nextStatus = data.status as ReminderStatusValue;
+      updateData.status = nextStatus;
+
+      if (nextStatus === 'COMPLETED') {
+        if (existingReminder.status !== 'COMPLETED') {
+          updateData.completedAt = new Date();
+        }
+      } else {
+        updateData.completedAt = null;
+      }
     }
   }
 
