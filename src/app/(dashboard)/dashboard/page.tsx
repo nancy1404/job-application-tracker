@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 
 type Company = {
   id: string;
@@ -32,11 +32,55 @@ type Reminder = {
   title: string;
   dueDate: string;
   status: string;
+  completedAt?: string | null;
   application?: {
     id: string;
     title: string;
     company?: Company | null;
   } | null;
+};
+
+type WeeklyGoalTypeValue = 'ADD_OPPORTUNITIES' | 'APPLY_TO_OPPORTUNITIES' | 'COMPLETE_FOLLOW_UPS';
+
+type WeeklyGoal = {
+  id: string;
+  goalType: WeeklyGoalTypeValue;
+  targetCount: number;
+  weekStartDate: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type WeeklyGoalDrafts = Record<WeeklyGoalTypeValue, string>;
+
+const weeklyGoalConfigs = [
+  {
+    type: 'ADD_OPPORTUNITIES' as const,
+    label: 'Add opportunities',
+    description: 'Count opportunities created this week.',
+    barClass: 'bg-slate-900 dark:bg-slate-300',
+    completeClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
+  },
+  {
+    type: 'APPLY_TO_OPPORTUNITIES' as const,
+    label: 'Apply to opportunities',
+    description: 'Count opportunities with an application date this week.',
+    barClass: 'bg-sky-500 dark:bg-sky-400',
+    completeClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
+  },
+  {
+    type: 'COMPLETE_FOLLOW_UPS' as const,
+    label: 'Complete follow-ups',
+    description: 'Count reminders completed this week.',
+    barClass: 'bg-emerald-500 dark:bg-emerald-400',
+    completeClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
+  },
+] as const;
+
+const emptyWeeklyGoalDrafts: WeeklyGoalDrafts = {
+  ADD_OPPORTUNITIES: '',
+  APPLY_TO_OPPORTUNITIES: '',
+  COMPLETE_FOLLOW_UPS: '',
 };
 
 type SessionUser = {
@@ -192,16 +236,86 @@ function buildStatusDonutGradient(values: number[]) {
   return `conic-gradient(${segments.join(', ')})`;
 }
 
+function getStartOfWeek(value: Date) {
+  const start = new Date(value);
+  const dayIndex = (start.getDay() + 6) % 7;
+  start.setDate(start.getDate() - dayIndex);
+  start.setHours(0, 0, 0, 0);
+  return start;
+}
+
+function getWeeklyGoalDrafts(goals: WeeklyGoal[]) {
+  return goals.reduce<WeeklyGoalDrafts>((drafts, goal) => {
+    drafts[goal.goalType] = String(goal.targetCount);
+    return drafts;
+  }, { ...emptyWeeklyGoalDrafts });
+}
+
+function getWeeklyGoalConfig(goalType: WeeklyGoalTypeValue) {
+  return weeklyGoalConfigs.find((config) => config.type === goalType) ?? weeklyGoalConfigs[0];
+}
+
+function getWeeklyGoalProgressCount(
+  goalType: WeeklyGoalTypeValue,
+  applications: Application[],
+  reminders: Reminder[],
+  weekStart: Date,
+  now: Date
+) {
+  switch (goalType) {
+    case 'ADD_OPPORTUNITIES':
+      return applications.filter((application) => isWithinRange(toValidDate(application.createdAt), weekStart, now)).length;
+    case 'APPLY_TO_OPPORTUNITIES':
+      return applications.filter((application) => isWithinRange(toValidDate(application.appliedDate ?? undefined), weekStart, now)).length;
+    case 'COMPLETE_FOLLOW_UPS':
+      return reminders.filter((reminder) => isWithinRange(toValidDate(reminder.completedAt ?? undefined), weekStart, now)).length;
+    default:
+      return 0;
+  }
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [applications, setApplications] = useState<Application[]>([]);
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [weeklyGoals, setWeeklyGoals] = useState<WeeklyGoal[]>([]);
+  const [weeklyGoalDrafts, setWeeklyGoalDrafts] = useState<WeeklyGoalDrafts>({ ...emptyWeeklyGoalDrafts });
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
   const [profileGreeting, setProfileGreeting] = useState<ProfileGreeting | null>(null);
+  const [weeklyGoalsLoading, setWeeklyGoalsLoading] = useState(false);
+  const [weeklyGoalsLoadError, setWeeklyGoalsLoadError] = useState('');
+  const [weeklyGoalsSaveError, setWeeklyGoalsSaveError] = useState('');
+  const [weeklyGoalsSaveSuccess, setWeeklyGoalsSaveSuccess] = useState('');
+  const [weeklyGoalsSaving, setWeeklyGoalsSaving] = useState(false);
   const [authStatus, setAuthStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
+
+  async function loadWeeklyGoalsForWeek(weekStartDate: Date) {
+    setWeeklyGoalsLoading(true);
+    setWeeklyGoalsLoadError('');
+
+    try {
+      const response = await fetch(`/api/weekly-goals?weekStart=${encodeURIComponent(weekStartDate.toISOString())}`);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error ?? 'Failed to load weekly goals.');
+      }
+
+      const data = (await response.json()) as { weeklyGoals?: WeeklyGoal[] };
+      const nextWeeklyGoals = data.weeklyGoals ?? [];
+
+      setWeeklyGoals(nextWeeklyGoals);
+      setWeeklyGoalDrafts(getWeeklyGoalDrafts(nextWeeklyGoals));
+    } catch (error) {
+      setWeeklyGoals([]);
+      setWeeklyGoalsLoadError(error instanceof Error ? error.message : 'Failed to load weekly goals.');
+    } finally {
+      setWeeklyGoalsLoading(false);
+    }
+  }
 
   useEffect(() => {
     async function loadData() {
@@ -256,6 +370,8 @@ export default function DashboardPage() {
         setApplications(applicationsData.applications ?? []);
         setResumes(resumesData.resumes ?? []);
         setReminders(remindersData.reminders ?? []);
+
+        void loadWeeklyGoalsForWeek(getStartOfWeek(new Date()));
       } catch (error) {
         setLoadError(error instanceof Error ? error.message : 'Failed to load dashboard data.');
       } finally {
@@ -307,10 +423,7 @@ export default function DashboardPage() {
   });
 
   const hasReminderAlert = overdueAlertReminders.length > 0 || dueTodayAlertReminders.length > 0;
-  const weekStart = new Date(now);
-  const dayIndex = (weekStart.getDay() + 6) % 7;
-  weekStart.setDate(weekStart.getDate() - dayIndex);
-  weekStart.setHours(0, 0, 0, 0);
+  const weekStart = getStartOfWeek(now);
 
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
@@ -404,6 +517,100 @@ export default function DashboardPage() {
       return rightTime - leftTime;
     })
     .slice(0, 3);
+
+  const weeklyGoalProgress = weeklyGoalConfigs.map((config) => {
+    const savedGoal = weeklyGoals.find((goal) => goal.goalType === config.type);
+    const progressCount = getWeeklyGoalProgressCount(config.type, applications, reminders, weekStart, now);
+    const targetCount = savedGoal?.targetCount ?? 0;
+
+    return {
+      type: config.type,
+      label: config.label,
+      description: config.description,
+      barClass: config.barClass,
+      completeClass: config.completeClass,
+      progressCount,
+      targetCount,
+      hasGoal: Boolean(savedGoal),
+      isComplete: savedGoal ? progressCount >= savedGoal.targetCount : false,
+      percent: savedGoal ? getPercent(progressCount, savedGoal.targetCount) : 0,
+    };
+  });
+
+  const hasWeeklyGoals = weeklyGoals.length > 0;
+
+  function updateWeeklyGoalDraft(goalType: WeeklyGoalTypeValue, value: string) {
+    setWeeklyGoalsSaveError('');
+    setWeeklyGoalsSaveSuccess('');
+    setWeeklyGoalDrafts((currentDrafts) => ({
+      ...currentDrafts,
+      [goalType]: value,
+    }));
+  }
+
+  async function handleWeeklyGoalsSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setWeeklyGoalsSaveError('');
+    setWeeklyGoalsSaveSuccess('');
+    setWeeklyGoalsSaving(true);
+
+    try {
+      const goals = weeklyGoalConfigs
+        .map((config) => {
+          const rawValue = weeklyGoalDrafts[config.type].trim();
+
+          if (!rawValue) {
+            return null;
+          }
+
+          const targetCount = Number(rawValue);
+
+          if (!Number.isInteger(targetCount) || targetCount < 1) {
+            return null;
+          }
+
+          return {
+            goalType: config.type,
+            targetCount,
+          };
+        })
+        .filter((goal): goal is { goalType: WeeklyGoalTypeValue; targetCount: number } => goal !== null);
+
+      if (goals.length === 0) {
+        setWeeklyGoalsSaveError('Set at least one goal before saving.');
+        return;
+      }
+
+      const response = await fetch('/api/weekly-goals', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          weekStartDate: weekStart.toISOString(),
+          goals,
+        }),
+      });
+
+      const responseData = (await response.json().catch(() => ({}))) as {
+        weeklyGoals?: WeeklyGoal[];
+        error?: string;
+        details?: Record<string, string[]>;
+      };
+
+      if (!response.ok) {
+        const firstError = responseData.details ? Object.values(responseData.details).flat().find(Boolean) : undefined;
+        throw new Error(firstError ?? responseData.error ?? 'Failed to save weekly goals.');
+      }
+
+      const nextWeeklyGoals = responseData.weeklyGoals ?? [];
+      setWeeklyGoals(nextWeeklyGoals);
+      setWeeklyGoalDrafts(getWeeklyGoalDrafts(nextWeeklyGoals));
+      setWeeklyGoalsSaveSuccess('Weekly goals updated.');
+    } catch (error) {
+      setWeeklyGoalsSaveError(error instanceof Error ? error.message : 'Failed to save weekly goals.');
+    } finally {
+      setWeeklyGoalsSaving(false);
+    }
+  }
 
   const greetingTarget =
     profileGreeting?.preferredName?.trim() ||
@@ -531,6 +738,127 @@ export default function DashboardPage() {
                 <p className="mt-2 text-3xl font-semibold text-sky-800 dark:text-sky-200">{upcomingReminders.length}</p>
               </div>
             </div>
+
+            <section className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Weekly Goals</h2>
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                    Set 1–3 weekly targets to track your momentum.
+                  </p>
+                </div>
+                <span className="text-sm text-slate-500 dark:text-slate-400">Monday-start week</span>
+              </div>
+
+              {weeklyGoalsLoading ? (
+                <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">Loading weekly goals...</p>
+              ) : null}
+              {weeklyGoalsLoadError ? <p className="mt-4 text-sm text-red-600">{weeklyGoalsLoadError}</p> : null}
+
+              {!weeklyGoalsLoading ? (
+                <>
+                  <div className="mt-4 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+                    <div className="space-y-3">
+                      {!hasWeeklyGoals ? (
+                        <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                          Set 1–3 weekly targets to track your momentum.
+                        </div>
+                      ) : (
+                        weeklyGoalProgress.map((goal) => {
+                          if (!goal.hasGoal) {
+                            return null;
+                          }
+
+                          return (
+                            <article
+                              key={goal.type}
+                              className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800"
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{goal.label}</h3>
+                                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{goal.description}</p>
+                                </div>
+                                <span
+                                  className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                                    goal.isComplete
+                                      ? goal.completeClass
+                                      : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-200'
+                                  }`}
+                                >
+                                  {goal.isComplete ? 'Completed' : 'In progress'}
+                                </span>
+                              </div>
+
+                              <div className="mt-3">
+                                <div className="mb-1 flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
+                                  <span>Progress</span>
+                                  <span>
+                                    {goal.progressCount} / {goal.targetCount}
+                                  </span>
+                                </div>
+                                <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700">
+                                  <div
+                                    className={`h-2 rounded-full ${goal.barClass}`}
+                                    style={{ width: `${goal.percent}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </article>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    <form className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800" onSubmit={handleWeeklyGoalsSubmit}>
+                      <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        {hasWeeklyGoals ? 'Edit goals' : 'Set goals'}
+                      </h3>
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        Leave a target blank to omit it from this week.
+                      </p>
+
+                      <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
+                        {weeklyGoalConfigs.map((config) => (
+                          <div key={config.type}>
+                            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200" htmlFor={`weekly-goal-${config.type}`}>
+                              {config.label}
+                            </label>
+                            <input
+                              id={`weekly-goal-${config.type}`}
+                              type="number"
+                              min={0}
+                              max={99}
+                              inputMode="numeric"
+                              value={weeklyGoalDrafts[config.type]}
+                              onChange={(event) => updateWeeklyGoalDraft(config.type, event.target.value)}
+                              disabled={weeklyGoalsLoading || weeklyGoalsSaving}
+                              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-slate-500 dark:focus:ring-slate-700 dark:disabled:bg-slate-800"
+                              placeholder="0"
+                            />
+                          </div>
+                        ))}
+                      </div>
+
+                      {weeklyGoalsSaveError ? <p className="mt-4 text-sm text-red-600">{weeklyGoalsSaveError}</p> : null}
+                      {!weeklyGoalsSaveError && weeklyGoalsSaveSuccess ? (
+                        <p className="mt-4 text-sm text-emerald-600 dark:text-emerald-400">{weeklyGoalsSaveSuccess}</p>
+                      ) : null}
+
+                      <div className="mt-4 flex flex-wrap gap-3">
+                        <button
+                          type="submit"
+                          disabled={weeklyGoalsLoading || weeklyGoalsSaving}
+                          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+                        >
+                          {weeklyGoalsSaving ? 'Saving goals...' : hasWeeklyGoals ? 'Update goals' : 'Set goals'}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </>
+              ) : null}
+            </section>
 
             <section className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <div className="flex items-center justify-between gap-4">
