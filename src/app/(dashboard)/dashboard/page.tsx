@@ -50,8 +50,6 @@ const statusOptions = [
   { value: 'APPLIED', label: 'Applied' },
   { value: 'INTERVIEW', label: 'Interview' },
   { value: 'OFFER', label: 'Offer' },
-  { value: 'REJECTED', label: 'Rejected (legacy)' },
-  { value: 'ARCHIVED', label: 'Archived (legacy)' },
 ];
 
 const opportunityTypeBuckets = [
@@ -151,6 +149,14 @@ function isWithinRange(value: Date | null, start: Date, end: Date) {
   }
 
   return value >= start && value <= end;
+}
+
+function getPercent(value: number, total: number) {
+  if (total <= 0) {
+    return 0;
+  }
+
+  return Math.min(100, Math.round((value / total) * 100));
 }
 
 export default function DashboardPage() {
@@ -288,6 +294,24 @@ export default function DashboardPage() {
 
   const weeklyProgress = getProgressMetrics(weekStart);
   const monthlyProgress = getProgressMetrics(monthStart);
+  const weeklyScaleMax = Math.max(
+    1,
+    weeklyProgress.opportunitiesAdded,
+    weeklyProgress.applicationsSubmitted,
+    weeklyProgress.interviewsInRange,
+    weeklyProgress.offersInRange,
+    weeklyProgress.followUpsDue,
+    weeklyProgress.followUpsCompleted
+  );
+  const monthlyScaleMax = Math.max(
+    1,
+    monthlyProgress.opportunitiesAdded,
+    monthlyProgress.applicationsSubmitted,
+    monthlyProgress.interviewsInRange,
+    monthlyProgress.offersInRange,
+    monthlyProgress.followUpsDue,
+    monthlyProgress.followUpsCompleted
+  );
   const hasProgressData =
     weeklyProgress.opportunitiesAdded +
       weeklyProgress.applicationsSubmitted +
@@ -400,124 +424,131 @@ export default function DashboardPage() {
                 </p>
               ) : (
                 <>
-                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                    Metrics use created date, applied date, and reminder due date with current reminder status.
-                  </p>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Opportunities added</p>
+                      <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+                        {weeklyProgress.opportunitiesAdded}
+                        <span className="ml-2 text-xs font-medium text-slate-500 dark:text-slate-400">week</span>
+                      </p>
+                      <p className="text-sm text-slate-600 dark:text-slate-300">{monthlyProgress.opportunitiesAdded} this month</p>
+                    </div>
+
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Applications submitted</p>
+                      <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+                        {weeklyProgress.applicationsSubmitted}
+                        <span className="ml-2 text-xs font-medium text-slate-500 dark:text-slate-400">week</span>
+                      </p>
+                      <p className="text-sm text-slate-600 dark:text-slate-300">{monthlyProgress.applicationsSubmitted} this month</p>
+                    </div>
+
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Follow-ups due</p>
+                      <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+                        {weeklyProgress.followUpsDue}
+                        <span className="ml-2 text-xs font-medium text-slate-500 dark:text-slate-400">week</span>
+                      </p>
+                      <p className="text-sm text-slate-600 dark:text-slate-300">{monthlyProgress.followUpsDue} this month</p>
+                    </div>
+                  </div>
 
                   <div className="mt-4 grid gap-4 lg:grid-cols-2">
                     <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
                       <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">This week</h3>
-                      <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-                        <div className="rounded-md bg-white p-3 dark:bg-slate-900">
-                          <p className="text-slate-500 dark:text-slate-400">Opportunities added</p>
-                          <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{weeklyProgress.opportunitiesAdded}</p>
+                      <div className="mt-3 space-y-3">
+                        <div>
+                          <div className="mb-1 flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
+                            <span>Opportunities added</span>
+                            <span>{weeklyProgress.opportunitiesAdded}</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700">
+                            <div className="h-2 rounded-full bg-slate-900 dark:bg-slate-300" style={{ width: `${getPercent(weeklyProgress.opportunitiesAdded, weeklyScaleMax)}%` }} />
+                          </div>
                         </div>
-                        <div className="rounded-md bg-white p-3 dark:bg-slate-900">
-                          <p className="text-slate-500 dark:text-slate-400">Applications submitted</p>
-                          <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{weeklyProgress.applicationsSubmitted}</p>
+
+                        <div>
+                          <div className="mb-1 flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
+                            <span>Applications submitted</span>
+                            <span>{weeklyProgress.applicationsSubmitted}</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700">
+                            <div className="h-2 rounded-full bg-sky-500 dark:bg-sky-400" style={{ width: `${getPercent(weeklyProgress.applicationsSubmitted, weeklyScaleMax)}%` }} />
+                          </div>
                         </div>
-                        <div className="rounded-md bg-white p-3 dark:bg-slate-900">
-                          <p className="text-slate-500 dark:text-slate-400">Interviews (current stage)</p>
-                          <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{weeklyProgress.interviewsInRange}</p>
+
+                        <div>
+                          <div className="mb-1 flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
+                            <span>Follow-ups due</span>
+                            <span>{weeklyProgress.followUpsDue}</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700">
+                            <div className="h-2 rounded-full bg-amber-500 dark:bg-amber-400" style={{ width: `${getPercent(weeklyProgress.followUpsDue, weeklyScaleMax)}%` }} />
+                          </div>
                         </div>
-                        <div className="rounded-md bg-white p-3 dark:bg-slate-900">
-                          <p className="text-slate-500 dark:text-slate-400">Offers (current stage)</p>
-                          <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{weeklyProgress.offersInRange}</p>
-                        </div>
-                        <div className="rounded-md bg-white p-3 dark:bg-slate-900">
-                          <p className="text-slate-500 dark:text-slate-400">Follow-ups due</p>
-                          <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{weeklyProgress.followUpsDue}</p>
-                        </div>
-                        <div className="rounded-md bg-white p-3 dark:bg-slate-900">
-                          <p className="text-slate-500 dark:text-slate-400">Follow-ups completed</p>
-                          <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{weeklyProgress.followUpsCompleted}</p>
+
+                        <div>
+                          <div className="mb-1 flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
+                            <span>Follow-ups completed</span>
+                            <span>{weeklyProgress.followUpsCompleted}</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700">
+                            <div className="h-2 rounded-full bg-emerald-500 dark:bg-emerald-400" style={{ width: `${getPercent(weeklyProgress.followUpsCompleted, weeklyScaleMax)}%` }} />
+                          </div>
                         </div>
                       </div>
 
-                      <div className="mt-4 space-y-3">
-                        <div>
-                          <div className="mb-1 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                            <span>Submission momentum</span>
-                            <span>{weeklyProgress.submissionPercent}%</span>
-                          </div>
-                          <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700">
-                            <div
-                              className="h-2 rounded-full bg-sky-500 dark:bg-sky-400"
-                              style={{ width: `${weeklyProgress.submissionPercent}%` }}
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <div className="mb-1 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                            <span>Follow-up completion</span>
-                            <span>{weeklyProgress.followUpCompletionPercent}%</span>
-                          </div>
-                          <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700">
-                            <div
-                              className="h-2 rounded-full bg-emerald-500 dark:bg-emerald-400"
-                              style={{ width: `${weeklyProgress.followUpCompletionPercent}%` }}
-                            />
-                          </div>
-                        </div>
+                      <div className="mt-4 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                        Submission momentum: {weeklyProgress.submissionPercent}% of this week&apos;s added opportunities were submitted.
                       </div>
                     </div>
 
                     <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
                       <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">This month</h3>
-                      <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-                        <div className="rounded-md bg-white p-3 dark:bg-slate-900">
-                          <p className="text-slate-500 dark:text-slate-400">Opportunities added</p>
-                          <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{monthlyProgress.opportunitiesAdded}</p>
+                      <div className="mt-3 space-y-3">
+                        <div>
+                          <div className="mb-1 flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
+                            <span>Opportunities added</span>
+                            <span>{monthlyProgress.opportunitiesAdded}</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700">
+                            <div className="h-2 rounded-full bg-slate-900 dark:bg-slate-300" style={{ width: `${getPercent(monthlyProgress.opportunitiesAdded, monthlyScaleMax)}%` }} />
+                          </div>
                         </div>
-                        <div className="rounded-md bg-white p-3 dark:bg-slate-900">
-                          <p className="text-slate-500 dark:text-slate-400">Applications submitted</p>
-                          <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{monthlyProgress.applicationsSubmitted}</p>
+
+                        <div>
+                          <div className="mb-1 flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
+                            <span>Applications submitted</span>
+                            <span>{monthlyProgress.applicationsSubmitted}</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700">
+                            <div className="h-2 rounded-full bg-sky-500 dark:bg-sky-400" style={{ width: `${getPercent(monthlyProgress.applicationsSubmitted, monthlyScaleMax)}%` }} />
+                          </div>
                         </div>
-                        <div className="rounded-md bg-white p-3 dark:bg-slate-900">
-                          <p className="text-slate-500 dark:text-slate-400">Interviews (current stage)</p>
-                          <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{monthlyProgress.interviewsInRange}</p>
+
+                        <div>
+                          <div className="mb-1 flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
+                            <span>Interviews (added this month)</span>
+                            <span>{monthlyProgress.interviewsInRange}</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700">
+                            <div className="h-2 rounded-full bg-violet-500 dark:bg-violet-400" style={{ width: `${getPercent(monthlyProgress.interviewsInRange, monthlyScaleMax)}%` }} />
+                          </div>
                         </div>
-                        <div className="rounded-md bg-white p-3 dark:bg-slate-900">
-                          <p className="text-slate-500 dark:text-slate-400">Offers (current stage)</p>
-                          <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{monthlyProgress.offersInRange}</p>
-                        </div>
-                        <div className="rounded-md bg-white p-3 dark:bg-slate-900">
-                          <p className="text-slate-500 dark:text-slate-400">Follow-ups due</p>
-                          <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{monthlyProgress.followUpsDue}</p>
-                        </div>
-                        <div className="rounded-md bg-white p-3 dark:bg-slate-900">
-                          <p className="text-slate-500 dark:text-slate-400">Follow-ups completed</p>
-                          <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{monthlyProgress.followUpsCompleted}</p>
+
+                        <div>
+                          <div className="mb-1 flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
+                            <span>Offers (added this month)</span>
+                            <span>{monthlyProgress.offersInRange}</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700">
+                            <div className="h-2 rounded-full bg-fuchsia-500 dark:bg-fuchsia-400" style={{ width: `${getPercent(monthlyProgress.offersInRange, monthlyScaleMax)}%` }} />
+                          </div>
                         </div>
                       </div>
 
-                      <div className="mt-4 space-y-3">
-                        <div>
-                          <div className="mb-1 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                            <span>Submission momentum</span>
-                            <span>{monthlyProgress.submissionPercent}%</span>
-                          </div>
-                          <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700">
-                            <div
-                              className="h-2 rounded-full bg-sky-500 dark:bg-sky-400"
-                              style={{ width: `${monthlyProgress.submissionPercent}%` }}
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <div className="mb-1 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                            <span>Follow-up completion</span>
-                            <span>{monthlyProgress.followUpCompletionPercent}%</span>
-                          </div>
-                          <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700">
-                            <div
-                              className="h-2 rounded-full bg-emerald-500 dark:bg-emerald-400"
-                              style={{ width: `${monthlyProgress.followUpCompletionPercent}%` }}
-                            />
-                          </div>
-                        </div>
+                      <div className="mt-4 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                        Follow-up completion: {monthlyProgress.followUpCompletionPercent}% of due follow-ups this month are completed.
                       </div>
                     </div>
                   </div>
