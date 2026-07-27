@@ -139,6 +139,7 @@ export default function ResumesPage() {
             variant="success"
             message={successMessage}
             onDismiss={() => setSuccessMessage('')}
+            autoDismissMs={5000}
             className="mb-6"
           />
         ) : null}

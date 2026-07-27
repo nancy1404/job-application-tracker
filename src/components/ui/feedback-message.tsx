@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 
 type FeedbackVariant = 'success' | 'error' | 'info' | 'warning';
 
@@ -8,6 +8,7 @@ type FeedbackMessageProps = {
   message: string;
   action?: ReactNode;
   onDismiss?: () => void;
+  autoDismissMs?: number;
   className?: string;
 };
 
@@ -62,9 +63,24 @@ export function FeedbackMessage({
   message,
   action,
   onDismiss,
+  autoDismissMs,
   className,
 }: FeedbackMessageProps) {
   const classes = variantClasses[variant];
+
+  useEffect(() => {
+    if (!onDismiss || !autoDismissMs) {
+      return;
+    }
+
+    const timerId = window.setTimeout(() => {
+      onDismiss();
+    }, autoDismissMs);
+
+    return () => {
+      window.clearTimeout(timerId);
+    };
+  }, [autoDismissMs, onDismiss]);
 
   return (
     <section

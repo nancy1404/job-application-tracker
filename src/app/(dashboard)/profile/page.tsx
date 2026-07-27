@@ -179,6 +179,7 @@ export default function ProfilePage() {
                   variant="success"
                   message={successMessage}
                   onDismiss={() => setSuccessMessage('')}
+                  autoDismissMs={5000}
                 />
               ) : null}
 
