@@ -244,6 +244,13 @@ function getStartOfWeek(value: Date) {
   return start;
 }
 
+function getLocalDateKey(value: Date) {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function getWeeklyGoalDrafts(goals: WeeklyGoal[]) {
   return goals.reduce<WeeklyGoalDrafts>((drafts, goal) => {
     drafts[goal.goalType] = String(goal.targetCount);
@@ -291,6 +298,7 @@ export default function DashboardPage() {
   const [weeklyGoalsSaveSuccess, setWeeklyGoalsSaveSuccess] = useState('');
   const [weeklyGoalsSaving, setWeeklyGoalsSaving] = useState(false);
   const [authStatus, setAuthStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
+  const [isReminderNotificationDismissed, setIsReminderNotificationDismissed] = useState(false);
 
   async function loadWeeklyGoalsForWeek(weekStartDate: Date) {
     setWeeklyGoalsLoading(true);
@@ -423,6 +431,8 @@ export default function DashboardPage() {
   });
 
   const hasReminderAlert = overdueAlertReminders.length > 0 || dueTodayAlertReminders.length > 0;
+  const reminderNotificationStorageKey = `dashboard-reminder-notification-dismissed-${getLocalDateKey(now)}`;
+  const showReminderNotification = hasReminderAlert && !isReminderNotificationDismissed;
   const weekStart = getStartOfWeek(now);
 
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -626,6 +636,25 @@ export default function DashboardPage() {
     year: 'numeric',
   }).format(new Date());
 
+  useEffect(() => {
+    try {
+      const dismissedValue = window.localStorage.getItem(reminderNotificationStorageKey);
+      setIsReminderNotificationDismissed(dismissedValue === '1');
+    } catch {
+      setIsReminderNotificationDismissed(false);
+    }
+  }, [reminderNotificationStorageKey]);
+
+  function dismissReminderNotification() {
+    setIsReminderNotificationDismissed(true);
+
+    try {
+      window.localStorage.setItem(reminderNotificationStorageKey, '1');
+    } catch {
+      // Ignore storage write errors; state still hides the notification for this session.
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <div className="mx-auto max-w-6xl px-6 py-10">
@@ -643,30 +672,49 @@ export default function DashboardPage() {
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Here’s your opportunity activity for today.</p>
         </header>
 
-        {hasReminderAlert ? (
-          <section className="mb-6 rounded-xl border border-amber-200 bg-amber-50/90 p-4 text-sm dark:border-amber-900/60 dark:bg-amber-950/30">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-amber-900 dark:text-amber-100">
-                {overdueAlertReminders.length > 0 ? (
-                  <>
-                    You have {overdueAlertReminders.length} overdue follow-up
-                    {overdueAlertReminders.length === 1 ? '' : 's'}
-                    {dueTodayAlertReminders.length > 0 ? ' and ' : '.'}
-                  </>
-                ) : null}
-                {dueTodayAlertReminders.length > 0 ? (
-                  <>
-                    {overdueAlertReminders.length > 0 ? `${dueTodayAlertReminders.length} follow-up${dueTodayAlertReminders.length === 1 ? '' : 's'} due today.` : `You have ${dueTodayAlertReminders.length} follow-up${dueTodayAlertReminders.length === 1 ? '' : 's'} due today.`}
-                  </>
-                ) : null}
-              </p>
+        {showReminderNotification ? (
+          <section className="mb-6 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-amber-100/60 p-4 shadow-sm dark:border-amber-900/60 dark:from-amber-950/40 dark:to-amber-900/20">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-500 dark:bg-amber-400" />
+                  <h2 className="text-sm font-semibold text-amber-900 dark:text-amber-100">Reminder check-in</h2>
+                </div>
+                <p className="mt-1 text-sm text-amber-900/90 dark:text-amber-100/90">
+                  You have pending follow-ups that need attention today. Review your reminders to stay on track.
+                </p>
 
-              <Link
-                href="/reminders"
-                className="inline-flex w-fit items-center rounded-md border border-amber-300 px-3 py-1.5 text-xs font-medium text-amber-900 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-100 dark:hover:bg-amber-900/40"
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {overdueAlertReminders.length > 0 ? (
+                    <span className="rounded-full border border-rose-300 bg-rose-100 px-2.5 py-1 text-xs font-medium text-rose-800 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-200">
+                      {overdueAlertReminders.length} overdue
+                    </span>
+                  ) : null}
+                  {dueTodayAlertReminders.length > 0 ? (
+                    <span className="rounded-full border border-amber-300 bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-200">
+                      {dueTodayAlertReminders.length} due today
+                    </span>
+                  ) : null}
+                </div>
+
+                <div className="mt-4">
+                  <Link
+                    href="/reminders"
+                    className="inline-flex items-center rounded-md border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-900 transition hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-100 dark:hover:bg-amber-900/40"
+                  >
+                    View reminders
+                  </Link>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={dismissReminderNotification}
+                className="shrink-0 rounded-md border border-amber-300 px-2 py-1 text-xs font-medium text-amber-900 transition hover:bg-amber-100 dark:border-amber-700 dark:text-amber-100 dark:hover:bg-amber-900/40"
+                aria-label="Dismiss reminder notification"
               >
-                Open reminders
-              </Link>
+                Dismiss
+              </button>
             </div>
           </section>
         ) : null}
