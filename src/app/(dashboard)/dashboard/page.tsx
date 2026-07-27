@@ -299,6 +299,7 @@ export default function DashboardPage() {
   const [weeklyGoalsSaving, setWeeklyGoalsSaving] = useState(false);
   const [authStatus, setAuthStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
   const [isReminderNotificationDismissed, setIsReminderNotificationDismissed] = useState(false);
+  const [hideReminderForToday, setHideReminderForToday] = useState(false);
 
   async function loadWeeklyGoalsForWeek(weekStartDate: Date) {
     setWeeklyGoalsLoading(true);
@@ -640,13 +641,19 @@ export default function DashboardPage() {
     try {
       const dismissedValue = window.localStorage.getItem(reminderNotificationStorageKey);
       setIsReminderNotificationDismissed(dismissedValue === '1');
+      setHideReminderForToday(dismissedValue === '1');
     } catch {
       setIsReminderNotificationDismissed(false);
+      setHideReminderForToday(false);
     }
   }, [reminderNotificationStorageKey]);
 
   function dismissReminderNotification() {
     setIsReminderNotificationDismissed(true);
+
+    if (!hideReminderForToday) {
+      return;
+    }
 
     try {
       window.localStorage.setItem(reminderNotificationStorageKey, '1');
@@ -674,7 +681,7 @@ export default function DashboardPage() {
 
         {showReminderNotification ? (
           <section className="mb-6 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-amber-100/60 p-4 shadow-sm dark:border-amber-900/60 dark:from-amber-950/40 dark:to-amber-900/20">
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-500 dark:bg-amber-400" />
@@ -700,21 +707,33 @@ export default function DashboardPage() {
                 <div className="mt-4">
                   <Link
                     href="/reminders"
-                    className="inline-flex items-center rounded-md border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-900 transition hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-100 dark:hover:bg-amber-900/40"
+                    className="inline-flex items-center rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-amber-700 dark:bg-amber-500 dark:text-amber-950 dark:hover:bg-amber-400"
                   >
                     View reminders
                   </Link>
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={dismissReminderNotification}
-                className="shrink-0 rounded-md border border-amber-300 px-2 py-1 text-xs font-medium text-amber-900 transition hover:bg-amber-100 dark:border-amber-700 dark:text-amber-100 dark:hover:bg-amber-900/40"
-                aria-label="Dismiss reminder notification"
-              >
-                Dismiss
-              </button>
+              <div className="flex shrink-0 items-center gap-3 self-end sm:self-start">
+                <label className="inline-flex items-center gap-2 text-xs text-amber-900 dark:text-amber-100">
+                  <input
+                    type="checkbox"
+                    checked={hideReminderForToday}
+                    onChange={(event) => setHideReminderForToday(event.target.checked)}
+                    className="h-3.5 w-3.5 rounded border-amber-300 bg-white text-amber-600 focus:ring-amber-500 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-400 dark:focus:ring-amber-400"
+                  />
+                  <span className="whitespace-nowrap">Hide for today</span>
+                </label>
+
+                <button
+                  type="button"
+                  onClick={dismissReminderNotification}
+                  className="rounded-md border border-amber-300 px-2.5 py-1 text-xs font-medium text-amber-900 transition hover:bg-amber-100 dark:border-amber-700 dark:text-amber-100 dark:hover:bg-amber-900/40"
+                  aria-label="Dismiss reminder notification"
+                >
+                  Dismiss
+                </button>
+              </div>
             </div>
           </section>
         ) : null}
