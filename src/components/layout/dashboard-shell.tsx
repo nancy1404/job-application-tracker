@@ -39,7 +39,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           <AccountPanel />
         </aside>
 
-        <main className="flex-1 p-5 lg:p-8">{children}</main>
+        <main className="flex-1 p-5 lg:p-8">
+          {children}
+          <footer className="mt-10 border-t border-slate-200 pt-4 text-center text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
+            © 2026 Nakyung Kwak. All rights reserved.
+          </footer>
+        </main>
       </div>
     </div>
   );
