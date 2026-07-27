@@ -63,6 +63,12 @@ export async function POST(request: Request) {
               title: data.title,
               content: data.content,
               isDefault: data.isDefault,
+              fileUrl: data.fileUrl,
+              filePathname: data.filePathname,
+              fileName: data.fileName,
+              fileMimeType: data.fileMimeType,
+              fileSizeBytes: data.fileSizeBytes,
+              uploadedAt: data.uploadedAt ? new Date(data.uploadedAt) : undefined,
             },
           }),
         ])
@@ -73,6 +79,12 @@ export async function POST(request: Request) {
           title: data.title,
           content: data.content,
           isDefault: data.isDefault,
+          fileUrl: data.fileUrl,
+          filePathname: data.filePathname,
+          fileName: data.fileName,
+          fileMimeType: data.fileMimeType,
+          fileSizeBytes: data.fileSizeBytes,
+          uploadedAt: data.uploadedAt ? new Date(data.uploadedAt) : undefined,
         },
       });
 

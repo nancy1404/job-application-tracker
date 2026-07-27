@@ -33,6 +33,36 @@ const optionalDateInput = z.preprocess((value) => {
   return value;
 }, z.union([z.string().datetime(), z.date()]).optional());
 
+const optionalDateTimeString = z.preprocess((value) => {
+  if (value == null || (typeof value === 'string' && value.trim() === '')) {
+    return undefined;
+  }
+
+  return value;
+}, z.string().datetime().optional());
+
+const resumeFileMimeTypeSchema = z.enum([
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/msword',
+]);
+
+const optionalResumeFileMimeType = z.preprocess((value) => {
+  if (typeof value === 'string' && value.trim() === '') {
+    return undefined;
+  }
+
+  return value;
+}, resumeFileMimeTypeSchema.optional());
+
+const optionalResumeFileSizeBytes = z.preprocess((value) => {
+  if (value == null || value === '') {
+    return undefined;
+  }
+
+  return value;
+}, z.coerce.number().int().positive().max(5 * 1024 * 1024).optional());
+
 export const createApplicationSchema = z.object({
   title: z.string().trim().min(1, 'Title is required'),
   companyId: optionalEmptyString,
@@ -56,6 +86,12 @@ export const createResumeSchema = z.object({
   title: z.string().trim().min(1, 'Title is required').default('Untitled Resume'),
   content: z.string().trim().min(1, 'Resume content is required'),
   isDefault: z.boolean().default(false),
+  fileUrl: optionalUrlString,
+  filePathname: optionalEmptyString,
+  fileName: optionalEmptyString,
+  fileMimeType: optionalResumeFileMimeType,
+  fileSizeBytes: optionalResumeFileSizeBytes,
+  uploadedAt: optionalDateTimeString,
 });
 
 export const updateResumeSchema = createResumeSchema.partial();

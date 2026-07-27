@@ -76,6 +76,12 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     title?: string;
     content?: string;
     isDefault?: boolean;
+    fileUrl?: string;
+    filePathname?: string;
+    fileName?: string;
+    fileMimeType?: 'application/pdf' | 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' | 'application/msword';
+    fileSizeBytes?: number;
+    uploadedAt?: Date;
   } = {};
 
   if (hasOwnProperty(body, 'title')) {
@@ -88,6 +94,30 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
   if (hasOwnProperty(body, 'isDefault')) {
     updateData.isDefault = data.isDefault;
+  }
+
+  if (hasOwnProperty(body, 'fileUrl')) {
+    updateData.fileUrl = data.fileUrl;
+  }
+
+  if (hasOwnProperty(body, 'filePathname')) {
+    updateData.filePathname = data.filePathname;
+  }
+
+  if (hasOwnProperty(body, 'fileName')) {
+    updateData.fileName = data.fileName;
+  }
+
+  if (hasOwnProperty(body, 'fileMimeType')) {
+    updateData.fileMimeType = data.fileMimeType;
+  }
+
+  if (hasOwnProperty(body, 'fileSizeBytes')) {
+    updateData.fileSizeBytes = data.fileSizeBytes;
+  }
+
+  if (hasOwnProperty(body, 'uploadedAt')) {
+    updateData.uploadedAt = data.uploadedAt ? new Date(data.uploadedAt) : undefined;
   }
 
   const resume = shouldSetDefault
