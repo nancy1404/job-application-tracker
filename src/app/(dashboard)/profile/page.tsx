@@ -278,7 +278,7 @@ export default function ProfilePage() {
                     <a
                       href={link.value}
                       target="_blank"
-                      rel="noopener noreferrer"
+                      rel="noreferrer"
                       className="group flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition hover:border-slate-300 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800/70 dark:hover:border-slate-600 dark:hover:bg-slate-800"
                     >
                       <span className="font-medium text-slate-800 dark:text-slate-100">{link.label}</span>
