@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/layout/page-header';
+import { FeedbackMessage } from '@/components/ui/feedback-message';
 
 type Profile = {
   id: string;
@@ -50,8 +51,7 @@ export default function ProfilePage() {
       }
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error ?? 'Failed to load profile.');
+        throw new Error('Could not load profile.');
       }
 
       const data = (await response.json()) as { profile: Profile };
@@ -64,7 +64,7 @@ export default function ProfilePage() {
       setLinkedinUrl(toInputValue(nextProfile.linkedinUrl));
       setPortfolioUrl(toInputValue(nextProfile.portfolioUrl));
     } catch (error) {
-      setLoadError(error instanceof Error ? error.message : 'Failed to load profile.');
+      setLoadError(error instanceof Error ? error.message : 'Could not load profile.');
     } finally {
       setIsLoading(false);
     }
@@ -109,7 +109,7 @@ export default function ProfilePage() {
               .filter(Boolean)
           : [];
 
-        throw new Error(fieldErrors[0] ?? responseData?.error ?? 'Failed to save profile.');
+        throw new Error(fieldErrors[0] ?? responseData?.error ?? 'Could not save profile.');
       }
 
       const nextProfile = responseData?.profile;
@@ -123,9 +123,9 @@ export default function ProfilePage() {
         setPortfolioUrl(toInputValue(nextProfile.portfolioUrl));
       }
 
-      setSuccessMessage('Profile updated successfully.');
+      setSuccessMessage('Profile updated.');
     } catch (error) {
-      setSaveError(error instanceof Error ? error.message : 'Failed to save profile.');
+      setSaveError(error instanceof Error ? error.message : 'Could not save profile.');
     } finally {
       setIsSaving(false);
     }
@@ -151,18 +151,37 @@ export default function ProfilePage() {
               <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-medium text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
                 Saving...
               </span>
-            ) : successMessage ? (
-              <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-                Saved
-              </span>
             ) : null}
           </div>
 
           {isLoading ? <p className="mt-6 text-sm text-slate-600 dark:text-slate-300">Loading profile...</p> : null}
-          {loadError ? <p className="mt-6 text-sm text-red-600">{loadError}</p> : null}
+          {loadError ? (
+            <FeedbackMessage
+              variant="error"
+              title="Could not load profile."
+              message={loadError}
+              className="mt-6"
+            />
+          ) : null}
 
           {!isLoading && !loadError ? (
             <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
+              {saveError ? (
+                <FeedbackMessage
+                  variant="error"
+                  title="Could not save profile."
+                  message={saveError}
+                  onDismiss={() => setSaveError('')}
+                />
+              ) : null}
+              {!saveError && successMessage ? (
+                <FeedbackMessage
+                  variant="success"
+                  message={successMessage}
+                  onDismiss={() => setSuccessMessage('')}
+                />
+              ) : null}
+
               <div className="grid gap-5 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200" htmlFor="name">
@@ -249,9 +268,6 @@ export default function ProfilePage() {
                   />
                 </div>
               </div>
-
-              {saveError ? <p className="text-sm text-red-600">{saveError}</p> : null}
-              {!saveError && successMessage ? <p className="text-sm text-emerald-600 dark:text-emerald-400">{successMessage}</p> : null}
 
               <div className="flex flex-wrap gap-3">
                 <button

@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState, type FormEvent } from 'react';
+import { EmptyState } from '@/components/ui/empty-state';
+import { FeedbackMessage } from '@/components/ui/feedback-message';
 
 type Resume = {
   id: string;
@@ -16,6 +18,7 @@ export default function ResumesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [formError, setFormError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [editingResumeId, setEditingResumeId] = useState('');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -29,13 +32,13 @@ export default function ResumesPage() {
       const response = await fetch('/api/resumes');
 
       if (!response.ok) {
-        throw new Error('Failed to load resumes.');
+        throw new Error('Could not load resumes.');
       }
 
       const data = (await response.json()) as { resumes: Resume[] };
       setResumes(data.resumes ?? []);
     } catch (error) {
-      setLoadError(error instanceof Error ? error.message : 'Failed to load resumes.');
+      setLoadError(error instanceof Error ? error.message : 'Could not load resumes.');
     } finally {
       setIsLoading(false);
     }
@@ -68,6 +71,7 @@ export default function ResumesPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError('');
+    setSuccessMessage('');
     setIsSubmitting(true);
 
     try {
@@ -79,14 +83,14 @@ export default function ResumesPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error ?? 'Failed to save resume.');
+        throw new Error('Could not save resume.');
       }
 
       resetForm();
       await loadData();
+      setSuccessMessage(isEditing ? 'Resume updated.' : 'Resume created.');
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'Failed to save resume.');
+      setFormError(error instanceof Error ? error.message : 'Could not save resume.');
     } finally {
       setIsSubmitting(false);
     }
@@ -100,6 +104,7 @@ export default function ResumesPage() {
     }
 
     setLoadError('');
+    setSuccessMessage('');
 
     try {
       const response = await fetch(`/api/resumes/${resumeId}`, {
@@ -107,8 +112,7 @@ export default function ResumesPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error ?? 'Failed to delete resume.');
+        throw new Error('Could not delete resume.');
       }
 
       if (editingResumeId === resumeId) {
@@ -116,8 +120,9 @@ export default function ResumesPage() {
       }
 
       await loadData();
+      setSuccessMessage('Resume deleted.');
     } catch (error) {
-      setLoadError(error instanceof Error ? error.message : 'Failed to delete resume.');
+      setLoadError(error instanceof Error ? error.message : 'Could not delete resume.');
     }
   }
 
@@ -128,6 +133,15 @@ export default function ResumesPage() {
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Resumes</h1>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Keep multiple resume versions ready for matching.</p>
         </header>
+
+        {successMessage ? (
+          <FeedbackMessage
+            variant="success"
+            message={successMessage}
+            onDismiss={() => setSuccessMessage('')}
+            className="mb-6"
+          />
+        ) : null}
 
         <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
           <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -171,7 +185,14 @@ export default function ResumesPage() {
                 Set as default resume
               </label>
 
-              {formError ? <p className="text-sm text-red-600">{formError}</p> : null}
+              {formError ? (
+                <FeedbackMessage
+                  variant="error"
+                  title="Could not save resume."
+                  message={formError}
+                  onDismiss={() => setFormError('')}
+                />
+              ) : null}
 
               <div className="flex flex-wrap gap-3">
                 <button
@@ -202,10 +223,22 @@ export default function ResumesPage() {
             </div>
 
             {isLoading ? <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">Loading resumes...</p> : null}
-            {loadError ? <p className="mt-4 text-sm text-red-600">{loadError}</p> : null}
+            {loadError ? (
+              <FeedbackMessage
+                variant="error"
+                title="Could not load resumes."
+                message={loadError}
+                onDismiss={() => setLoadError('')}
+                className="mt-4"
+              />
+            ) : null}
 
             {!isLoading && !loadError && resumes.length === 0 ? (
-              <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">No resumes yet.</p>
+              <EmptyState
+                title="No resumes yet"
+                description="Create your first resume to start matching opportunities."
+                className="mt-4 p-6"
+              />
             ) : null}
 
             <div className="mt-4 space-y-3">
