@@ -115,6 +115,12 @@ model Resume {
   userId    String
   title     String   @default("Untitled Resume")
   content   String   @db.Text
+  fileUrl      String?
+  filePathname String?
+  fileName     String?
+  fileMimeType String?
+  fileSizeBytes Int?
+  uploadedAt    DateTime?
   /// Application logic should ensure only one default resume per user.
   isDefault Boolean  @default(false)
   createdAt DateTime @default(now())
