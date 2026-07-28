@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 type Company = {
   id: string;
@@ -32,6 +32,15 @@ type Application = {
 type Resume = {
   id: string;
   title: string;
+};
+
+type Reminder = {
+  id: string;
+  dueDate: string;
+  status: string;
+  application?: {
+    id: string;
+  } | null;
 };
 
 type AiInsight = {
@@ -168,6 +177,7 @@ export default function ApplicationsPage() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [resumes, setResumes] = useState<Resume[]>([]);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [generatingApplicationId, setGeneratingApplicationId] = useState('');
@@ -199,16 +209,21 @@ export default function ApplicationsPage() {
   const [opportunityTypeFilter, setOpportunityTypeFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [outcomeFilter, setOutcomeFilter] = useState('ALL');
+  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+  const [focusFormAfterModeSwitch, setFocusFormAfterModeSwitch] = useState(false);
+  const formSectionRef = useRef<HTMLElement | null>(null);
+  const titleInputRef = useRef<HTMLInputElement | null>(null);
 
   async function loadData() {
     setIsLoading(true);
     setLoadError('');
 
     try {
-      const [applicationsResponse, companiesResponse, resumesResponse] = await Promise.all([
+      const [applicationsResponse, companiesResponse, resumesResponse, remindersResponse] = await Promise.all([
         fetch('/api/applications'),
         fetch('/api/companies'),
         fetch('/api/resumes'),
+        fetch('/api/reminders'),
       ]);
 
       if (!applicationsResponse.ok) {
@@ -223,13 +238,19 @@ export default function ApplicationsPage() {
         throw new Error('Failed to load resumes.');
       }
 
+      if (!remindersResponse.ok) {
+        throw new Error('Failed to load reminders.');
+      }
+
       const applicationsData = (await applicationsResponse.json()) as { applications: Application[] };
       const companiesData = (await companiesResponse.json()) as { companies: Company[] };
       const resumesData = (await resumesResponse.json()) as { resumes: Resume[] };
+      const remindersData = (await remindersResponse.json()) as { reminders: Reminder[] };
 
       setApplications(applicationsData.applications ?? []);
       setCompanies(companiesData.companies ?? []);
       setResumes(resumesData.resumes ?? []);
+      setReminders(remindersData.reminders ?? []);
 
       if (resumesData.resumes?.length) {
         setSelectedResumeIds((currentSelections) => {
@@ -259,6 +280,16 @@ export default function ApplicationsPage() {
   useEffect(() => {
     void loadData();
   }, []);
+
+  useEffect(() => {
+    if (viewMode !== 'card' || !focusFormAfterModeSwitch) {
+      return;
+    }
+
+    formSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    titleInputRef.current?.focus();
+    setFocusFormAfterModeSwitch(false);
+  }, [viewMode, focusFormAfterModeSwitch]);
 
   async function getOrCreateCompanyId(name: string) {
     const normalizedName = name.trim().toLowerCase();
@@ -613,6 +644,68 @@ export default function ApplicationsPage() {
   const activeApplications = filteredApplications.filter(isActiveOpportunity);
   const archivedApplications = filteredApplications.filter((application) => !isActiveOpportunity(application));
 
+  const pendingRemindersByApplication = reminders
+    .filter((reminder) => reminder.status === 'PENDING' && reminder.application?.id)
+    .reduce<Record<string, Reminder[]>>((accumulator, reminder) => {
+      const applicationId = reminder.application?.id;
+
+      if (!applicationId) {
+        return accumulator;
+      }
+
+      if (!accumulator[applicationId]) {
+        accumulator[applicationId] = [];
+      }
+
+      accumulator[applicationId].push(reminder);
+      return accumulator;
+    }, {});
+
+  function getNextPendingReminder(applicationId: string) {
+    const reminderList = pendingRemindersByApplication[applicationId];
+
+    if (!reminderList || reminderList.length === 0) {
+      return null;
+    }
+
+    return [...reminderList].sort((left, right) => new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime())[0] ?? null;
+  }
+
+  function getNextReminderLabel(applicationId: string) {
+    const nextReminder = getNextPendingReminder(applicationId);
+
+    if (!nextReminder) {
+      return '—';
+    }
+
+    const dueDate = new Date(nextReminder.dueDate);
+
+    if (Number.isNaN(dueDate.getTime())) {
+      return '—';
+    }
+
+    const now = new Date();
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+    const startOfTomorrow = new Date(startOfToday);
+    startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
+
+    if (dueDate < startOfToday) {
+      return 'Overdue';
+    }
+
+    if (dueDate >= startOfToday && dueDate < startOfTomorrow) {
+      return 'Due today';
+    }
+
+    return dueDate.toLocaleDateString();
+  }
+
+  function openNewOpportunityFormFromTableMode() {
+    setViewMode('card');
+    setFocusFormAfterModeSwitch(true);
+  }
+
   function renderOpportunityCard(application: Application) {
     const celebrationMessage = getCelebrationMessage(application);
 
@@ -856,6 +949,72 @@ export default function ApplicationsPage() {
     );
   }
 
+  function renderOpportunityTable(application: Application, options: { allowFollowUp: boolean }) {
+    return (
+      <tr key={application.id} className="border-t border-slate-200 dark:border-slate-700">
+        <td className="px-3 py-3 align-top">
+          <p className="font-medium text-slate-900 dark:text-slate-100">{application.title}</p>
+          <p className="text-xs text-slate-600 dark:text-slate-300">{application.company?.name ?? 'No company'}</p>
+          {application.jobUrl ? (
+            <a
+              className="mt-1 inline-flex text-xs text-slate-700 underline dark:text-slate-300"
+              href={application.jobUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open link
+            </a>
+          ) : null}
+        </td>
+        <td className="px-3 py-3 align-top text-sm text-slate-700 dark:text-slate-200">{getOpportunityTypeLabel(application.opportunityType)}</td>
+        <td className="px-3 py-3 align-top text-sm text-slate-700 dark:text-slate-200">{application.status}</td>
+        <td className="px-3 py-3 align-top text-sm text-slate-700 dark:text-slate-200">{application.outcome ?? 'ACTIVE'}</td>
+        <td className="px-3 py-3 align-top text-sm text-slate-700 dark:text-slate-200">
+          {application.appliedDate ? new Date(application.appliedDate).toLocaleDateString() : '—'}
+        </td>
+        <td className="px-3 py-3 align-top text-sm text-slate-700 dark:text-slate-200">
+          {application.usedResume?.title ?? '—'}
+        </td>
+        <td className="px-3 py-3 align-top text-sm text-slate-700 dark:text-slate-200">{getNextReminderLabel(application.id)}</td>
+        <td className="px-3 py-3 align-top">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => startEdit(application)}
+              className="rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 dark:border-slate-600 dark:text-slate-200"
+            >
+              Edit
+            </button>
+            {options.allowFollowUp ? (
+              <button
+                type="button"
+                onClick={() => addFollowUpReminder(application)}
+                disabled={creatingReminderForId === application.id}
+                className="rounded-md border border-sky-300 px-2.5 py-1 text-xs font-medium text-sky-700 disabled:cursor-not-allowed disabled:opacity-70 dark:border-sky-700 dark:text-sky-300"
+              >
+                {creatingReminderForId === application.id ? 'Adding...' : 'Add follow-up'}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => deleteApplication(application.id)}
+              className="rounded-md border border-red-200 px-2.5 py-1 text-xs font-medium text-red-700 dark:border-red-800 dark:text-red-300"
+            >
+              Delete
+            </button>
+          </div>
+          {reminderMessages[application.id] ? (
+            <p
+              className={`mt-2 text-xs ${reminderMessages[application.id] === 'Follow-up reminder added.' ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}
+            >
+              {reminderMessages[application.id]}
+            </p>
+          ) : null}
+        </td>
+      </tr>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <div className="mx-auto max-w-5xl px-6 py-10">
@@ -864,8 +1023,9 @@ export default function ApplicationsPage() {
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Track applications, outreach, and follow-ups in one place.</p>
         </header>
 
-        <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className={viewMode === 'card' ? 'grid gap-8 lg:grid-cols-[1.1fr_0.9fr]' : 'space-y-6'}>
+          {viewMode === 'card' ? (
+          <section ref={formSectionRef} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
               {editingApplicationId ? 'Edit opportunity' : 'New opportunity'}
             </h2>
@@ -910,6 +1070,7 @@ export default function ApplicationsPage() {
                   </label>
                   <input
                     id="title"
+                    ref={titleInputRef}
                     value={title}
                     onChange={(event) => setTitle(event.target.value)}
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
@@ -1111,13 +1272,50 @@ export default function ApplicationsPage() {
               ) : null}
             </form>
           </section>
+          ) : null}
 
           <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center justify-between gap-4">
               <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Your opportunities</h2>
-              <span className="text-sm text-slate-500 dark:text-slate-400">
-                {filteredApplications.length} shown / {applications.length} total
-              </span>
+              <div className="flex flex-wrap items-center justify-end gap-3">
+                {viewMode === 'table' ? (
+                  <button
+                    type="button"
+                    onClick={openNewOpportunityFormFromTableMode}
+                    className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    New opportunity
+                  </button>
+                ) : null}
+                <div className="inline-flex rounded-lg border border-slate-300 p-1 dark:border-slate-700">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('card')}
+                    className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
+                      viewMode === 'card'
+                        ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
+                        : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    Cards
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('table')}
+                    className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
+                      viewMode === 'table'
+                        ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
+                        : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    Table
+                  </button>
+                </div>
+
+                <span className="text-sm text-slate-500 dark:text-slate-400">
+                  {filteredApplications.length} shown / {applications.length} total
+                </span>
+              </div>
             </div>
 
             <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
@@ -1225,8 +1423,26 @@ export default function ApplicationsPage() {
                 </p>
                 {activeApplications.length === 0 ? (
                   <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">No active opportunities.</p>
-                ) : (
+                ) : viewMode === 'card' ? (
                   <div className="mt-3 space-y-3">{activeApplications.map(renderOpportunityCard)}</div>
+                ) : (
+                  <div className="mt-3 overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
+                    <table className="min-w-[980px] w-full text-left">
+                      <thead className="bg-slate-50 dark:bg-slate-800/70">
+                        <tr>
+                          <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Opportunity</th>
+                          <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Type</th>
+                          <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Status</th>
+                          <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Outcome</th>
+                          <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Applied</th>
+                          <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Resume/CV</th>
+                          <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Next reminder</th>
+                          <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white dark:bg-slate-900">{activeApplications.map((application) => renderOpportunityTable(application, { allowFollowUp: true }))}</tbody>
+                    </table>
+                  </div>
                 )}
               </div>
 
@@ -1237,8 +1453,26 @@ export default function ApplicationsPage() {
                 </p>
                 {archivedApplications.length === 0 ? (
                   <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">No archived or final-outcome opportunities yet.</p>
-                ) : (
+                ) : viewMode === 'card' ? (
                   <div className="mt-3 space-y-3">{archivedApplications.map(renderOpportunityCard)}</div>
+                ) : (
+                  <div className="mt-3 overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
+                    <table className="min-w-[980px] w-full text-left">
+                      <thead className="bg-slate-50 dark:bg-slate-800/70">
+                        <tr>
+                          <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Opportunity</th>
+                          <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Type</th>
+                          <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Status</th>
+                          <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Outcome</th>
+                          <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Applied</th>
+                          <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Resume/CV</th>
+                          <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Next reminder</th>
+                          <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white dark:bg-slate-900">{archivedApplications.map((application) => renderOpportunityTable(application, { allowFollowUp: false }))}</tbody>
+                    </table>
+                  </div>
                 )}
               </div>
             </div>
