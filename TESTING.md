@@ -1,277 +1,99 @@
 # Manual Local Testing Checklist
 
-Use this checklist when running the app locally with `npm run dev`.
+Use this checklist for practical local smoke coverage with `npm run dev`.
 
 ## 1) Start Local Dev
 
-1. Open terminal in project root.
-2. Install dependencies if needed:
+1. Install and run:
 
 ```bash
 npm install
-```
-
-3. Start dev server:
-
-```bash
 npm run dev
 ```
 
-4. Open app at:
+2. Open:
 - http://localhost:3000
 
-## 2) Important Data Safety Warning
+3. Confirm `.env` is pointed to a safe local/dev database before creating test data.
 
-Before creating test data, confirm which database is connected.
+## 2) Dashboard + Weekly Goals
 
-- Check `.env` and confirm `DATABASE_URL` points to your intended local/dev database.
-- Do not create test data if `DATABASE_URL` appears to point to production.
-- If unsure, stop and verify database host/project name first.
+- [ ] Sign in and load dashboard successfully
+- [ ] Weekly Goals card loads for the current week
+- [ ] Set all 3 goals (add opportunities, apply to opportunities, complete follow-ups)
+- [ ] Refresh and confirm weekly goals persist
+- [ ] Add one opportunity and confirm add-goal progress increments
+- [ ] Mark one opportunity with `appliedDate` and confirm apply-goal progress increments
+- [ ] Complete one reminder and confirm follow-up goal progress increments
 
-Quick check example:
+## 3) Reminder Notification Behavior
 
-```bash
-cat .env
-```
+Set up at least one overdue or due-today reminder to trigger the dashboard alert.
 
-## 3) Suggested Sample Resume/CV Data
+- [ ] Alert appears with correct overdue/due-today counts
+- [ ] Dismiss hides alert for current session view
+- [ ] Hide for today persists through refresh on the same day
+- [ ] Next day behavior resets as expected
 
-Create at least 2 to 3 resumes:
+## 4) Applications Page: Card/Table + Filters
 
-- Resume A: "General SWE Resume"
-- Resume B: "Frontend Focused Resume"
-- Resume C: "Research/Lab CV"
+- [ ] Create, edit, and delete one opportunity successfully
+- [ ] Switch between Card and Table view without data loss
+- [ ] Search works in Card view
+- [ ] Search works in Table view
+- [ ] Type/status/outcome filters work in Card view
+- [ ] Type/status/outcome filters work in Table view
+- [ ] Clear filters resets controls and results
+- [ ] Table view shows Next reminder column per opportunity
 
-For each resume, verify:
+## 5) Resume/CV Flow (External Links)
 
-- Title saves correctly
-- Content saves correctly
-- One resume can be set as default
-- Editing updates content
-- Delete works safely
+- [ ] Create resume/CV without external link
+- [ ] Create resume/CV with external link URL and file name
+- [ ] Open file action launches external link in a new tab
+- [ ] Edit and remove external link fields successfully
+- [ ] Confirm direct upload is not part of the current flow
 
-## 4) Suggested Sample Opportunity Data
+## 6) Used Resume/CV Per Opportunity
 
-Create at least 6 opportunities covering multiple types.
+- [ ] Select a resume/CV as Used resume/CV on an opportunity
+- [ ] Save and reload; selection persists
+- [ ] Update used resume/CV selection and verify it changes correctly
 
-Suggested mix:
+## 7) Feedback Message Behavior
 
-1. Job
-- Title: Frontend Engineer Intern
-- Company: Example Labs
-- Status: INTERESTED
-- Outcome: ACTIVE
+- [ ] Success messages appear after create/update/delete or complete actions
+- [ ] Success messages auto-dismiss after their timeout
+- [ ] Error messages appear on failed actions
+- [ ] Error messages do not auto-dismiss
+- [ ] Empty-state messages render when lists have no data
 
-2. Job
-- Title: Full-Stack Developer
-- Company: Acme Tech
-- Status: APPLIED
-- Outcome: ACTIVE
-- Applied date set
+## 8) Profile + Reminders Basics
 
-3. Internship
-- Title: Product Design Intern
-- Company: Pixel Studio
-- Status: SAVED
-- Outcome: ACTIVE
+- [ ] Profile values (display/preferred name and links) save and persist
+- [ ] Dashboard greeting reflects preferred name when set
+- [ ] Reminders page create/edit/complete flows work
 
-4. Research / Lab
-- Title: NLP Research Assistant
-- Company: University Lab
-- Status: INTERVIEW
-- Outcome: ACTIVE
+## 9) Dark Mode + Mobile
 
-5. Other Outreach
-- Title: Fellowship Outreach
-- Company: Community Org
-- Status: OFFER
-- Outcome: ACTIVE
+- [ ] Dark mode toggle works and core pages stay readable (dashboard, applications, resumes, reminders, profile)
+- [ ] Mobile width (around 390px) is usable without horizontal overflow
+- [ ] Dashboard alert, weekly goals, and applications controls remain usable on mobile
 
-6. Final/Archive case
-- Title: Backend Role (Old)
-- Company: Legacy Corp
-- Outcome: REJECTED or ARCHIVED
+## 10) Optional AI Checks
 
-Optional fields to test:
+Only when `OPENAI_API_KEY` is configured.
 
-- Contact name
-- Contact email
-- Job URL
-- Notes
-- Outcome notes
-- Resume/CV used
+- [ ] Generate AI match insight from an opportunity + resume pair
+- [ ] Insight content renders without runtime errors
 
-## 5) Suggested Sample Reminder Data
+If key is not configured:
 
-Create reminders with all timing states:
+- [ ] Core app workflows remain fully usable
 
-1. Overdue
-- Due date: yesterday
-- Status: PENDING
-
-2. Due today
-- Due date: today
-- Status: PENDING
-
-3. Future
-- Due date: 7 days later
-- Status: PENDING
-
-4. Completed
-- Any date
-- Status: COMPLETED
-
-Also test reminders linked to opportunities and reminders not linked.
-
-## 6) Dashboard Checks
-
-- [ ] Greeting, date, and quote render correctly
-- [ ] Greeting uses preferred name when set
-- [ ] Greeting falls back safely when preferred name is empty
-- [ ] Top reminder alert appears only when overdue or due-today reminders exist
-- [ ] Alert message counts are correct (overdue and due today)
-- [ ] Alert link opens Reminders page
-- [ ] Alert Dismiss hides notification for current session
-- [ ] Alert Hide for today persists through refresh for the same day
-- [ ] Status summary donut shows only workflow statuses:
-  - INTERESTED, SAVED, APPLIED, INTERVIEW, OFFER
-- [ ] Donut center count matches active opportunities count
-- [ ] Donut legend counts match actual data
-- [ ] Outcome summary still shows final/archive outcomes
-- [ ] Progress section updates week/month metrics based on data
-
-## 6.1) Weekly Goals Smoke Tests
-
-- [ ] Set weekly goals for all goal types:
-  - Add opportunities
-  - Apply to opportunities
-  - Complete follow-ups
-- [ ] Refresh the page and confirm weekly goals persist
-- [ ] Create an opportunity and confirm "Add opportunities" progress updates
-- [ ] Set `appliedDate` on an opportunity and confirm "Apply to opportunities" progress updates
-- [ ] Complete a reminder and confirm "Complete follow-ups" progress updates
-- [ ] Confirm Weekly Goals card empty state appears when goals are not set
-- [ ] Confirm Weekly Goals card is readable and usable in dark mode
-- [ ] Confirm Weekly Goals card layout and inline goal editing work on mobile widths
-
-## 7) Applications/Opportunities Page Checks
-
-- [ ] Create opportunity works
-- [ ] Edit opportunity works
-- [ ] Delete opportunity works
-- [ ] Active / Ongoing vs Final / Archive split is based on outcome
-- [ ] Status select shows normal statuses only:
-  - INTERESTED, SAVED, APPLIED, INTERVIEW, OFFER
-- [ ] Legacy statuses remain viewable if old records already use them
-- [ ] Search filters by title, company, contact name, contact email
-- [ ] Filters work for opportunity type, status, outcome
-- [ ] Clear filters resets all filter controls
-- [ ] Empty filtered result message appears when no matches
-- [ ] Add follow-up reminder action works
-
-## 7.1) Applications Table View Smoke Tests
-
-- [ ] Switch between Cards and Table views without data loss
-- [ ] Search works in both Cards and Table views
-- [ ] Type/status/outcome filters work in both Cards and Table views
-- [ ] Next reminder column shows nearest pending reminder per opportunity
-- [ ] New opportunity flow still works from table mode
-
-## 8) Resume/CV Page Checks
-
-- [ ] Create resume works
-- [ ] Edit resume works
-- [ ] Delete resume works
-- [ ] Default resume behavior is correct
-- [ ] Resume can be selected as "Resume/CV used" on opportunities
-
-## 8.1) External Resume/CV Link Smoke Tests
-
-- [ ] Create resume without external file link
-- [ ] Create resume with external file link
-- [ ] Open file action opens external link in a new tab
-- [ ] Clear/remove an existing external file link and save successfully
-
-## 9) Profile Page Checks
-
-- [ ] Open Profile page from the dashboard navigation
-- [ ] Email is visible and read-only
-- [ ] Edit display name and save successfully
-- [ ] Edit preferred name and save successfully
-- [ ] Save GitHub URL successfully
-- [ ] Save LinkedIn URL successfully
-- [ ] Save portfolio URL successfully
-- [ ] Reload the page and confirm all saved values persist
-- [ ] Return to dashboard and confirm greeting uses preferred name
-
-## 10) Reminders Page Checks
-
-- [ ] Create reminder works
-- [ ] Edit reminder works
-- [ ] Mark completed works
-- [ ] Linked opportunity info displays when present
-- [ ] Timing labels are correct (overdue, due today, upcoming, completed)
-- [ ] Sorting/visibility feels correct for pending vs completed
-
-## 10.1) Message Consistency Checks
-
-- [ ] Success messages appear after create/update/complete/delete actions and auto-dismiss
-- [ ] Error messages appear on failed actions and do not auto-dismiss
-
-## 11) Dark Mode Checks
-
-- [ ] Toggle works on dashboard layout
-- [ ] Dashboard remains readable in dark mode
-- [ ] Applications page controls and cards are readable
-- [ ] Profile page form and read-only email field remain readable
-- [ ] Reminders page is readable
-- [ ] Auth and resume pages remain readable
-
-## 12) Mobile/Responsive Checks
-
-Use browser responsive mode (for example 390px width):
-
-- [ ] Dashboard cards stack cleanly
-- [ ] Donut and legend remain readable
-- [ ] Reminder alert banner wraps cleanly
-- [ ] Applications search/filter controls stack without overlap
-- [ ] Profile page form fields stack cleanly without horizontal scrolling
-- [ ] Forms are usable without horizontal scrolling
-
-## 13) Optional AI Match Insights Checks
-
-Only if `OPENAI_API_KEY` is configured.
-
-- [ ] Select resume and generate AI insight from an opportunity
-- [ ] Match score, summary, strengths/gaps/suggestions render
-- [ ] Re-run behavior is stable (no crashes)
-
-If key is missing:
-
-- [ ] App remains usable for all non-AI features
-- [ ] AI feature shows a clear, safe error message
-
-## 14) Pre-Push Checklist
-
-Before pushing to GitHub:
-
-1. Build check:
+## 11) Final Verification
 
 ```bash
 npm run build
-```
-
-2. Verify working tree:
-
-```bash
 git status
 ```
-
-3. Quick smoke test:
-- Sign in
-- Open dashboard
-- Create/edit one opportunity
-- Check reminder alert behavior
-- Confirm filters on opportunities page
-
-4. Then commit/push if everything is good.

@@ -38,7 +38,9 @@ It is designed as a portfolio-ready capstone with strong fundamentals:
 - Profile links: save GitHub, LinkedIn, and portfolio URLs
 - Reminders/follow-ups: due tracking with overdue/upcoming visibility
 - Dark mode support across core pages
+- Consistent feedback UX: shared success/error/empty-state message patterns across key dashboard pages
 - Dashboard shell footer: subtle copyright line
+- App metadata and favicon branding: Application Tracker
 - Optional AI match insights per opportunity + resume pair
 
 ## Tech Stack
@@ -146,4 +148,7 @@ It highlights building a focused, user-friendly tracking product with optional A
 
 ## Future Work
 
-- Add first-party resume/CV file upload and storage (intentionally deferred in current version to avoid storage/billing risk)
+- Direct resume/CV upload and first-party storage (intentionally deferred in current version to avoid storage/billing risk)
+- Email reminder delivery (currently in-app reminder tracking only)
+- Recent activity timeline for opportunity, resume, and reminder updates
+- Admin analytics for aggregate usage and pipeline insights
