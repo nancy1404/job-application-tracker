@@ -18,8 +18,8 @@ const themeScript = `
 `;
 
 export const metadata: Metadata = {
-  title: 'Job Application Tracker',
-  description: 'Track applications and get AI match insights.',
+  title: 'Application Tracker',
+  description: 'Track opportunities, resumes, follow-ups, and weekly goals in one place.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
