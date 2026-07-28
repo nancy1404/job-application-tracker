@@ -9,6 +9,9 @@ type Resume = {
   title: string;
   content: string;
   isDefault: boolean;
+  fileName?: string | null;
+  fileUrl?: string | null;
+  uploadedAt?: string | null;
   createdAt?: string;
 };
 
@@ -23,6 +26,9 @@ export default function ResumesPage() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isDefault, setIsDefault] = useState(false);
+  const [fileName, setFileName] = useState('');
+  const [fileUrl, setFileUrl] = useState('');
+  const [uploadedAt, setUploadedAt] = useState('');
 
   async function loadData() {
     setIsLoading(true);
@@ -53,6 +59,9 @@ export default function ResumesPage() {
     setTitle('');
     setContent('');
     setIsDefault(false);
+    setFileName('');
+    setFileUrl('');
+    setUploadedAt('');
     setFormError('');
   }
 
@@ -61,6 +70,9 @@ export default function ResumesPage() {
     setTitle(resume.title);
     setContent(resume.content);
     setIsDefault(resume.isDefault);
+    setFileName(resume.fileName ?? '');
+    setFileUrl(resume.fileUrl ?? '');
+    setUploadedAt(resume.uploadedAt ?? '');
     setFormError('');
   }
 
@@ -76,10 +88,20 @@ export default function ResumesPage() {
 
     try {
       const isEditing = Boolean(editingResumeId);
+      const trimmedFileName = fileName.trim();
+      const trimmedFileUrl = fileUrl.trim();
+      const nextUploadedAt = trimmedFileUrl ? uploadedAt || new Date().toISOString() : undefined;
       const response = await fetch(isEditing ? `/api/resumes/${editingResumeId}` : '/api/resumes', {
         method: isEditing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content, isDefault }),
+        body: JSON.stringify({
+          title,
+          content,
+          isDefault,
+          fileName: trimmedFileName,
+          fileUrl: trimmedFileUrl,
+          uploadedAt: nextUploadedAt,
+        }),
       });
 
       if (!response.ok) {
@@ -186,6 +208,46 @@ export default function ResumesPage() {
                 Set as default resume
               </label>
 
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/60">
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Resume/CV file link</h3>
+                <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                  Paste a link to a PDF, DOCX, Google Drive file, or portfolio-hosted resume. Files are not uploaded to this app.
+                </p>
+
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200" htmlFor="fileName">
+                      External file name
+                    </label>
+                    <input
+                      id="fileName"
+                      value={fileName}
+                      onChange={(event) => setFileName(event.target.value)}
+                      placeholder="Resume 2026 PDF"
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200" htmlFor="fileUrl">
+                      External file URL
+                    </label>
+                    <input
+                      id="fileUrl"
+                      type="url"
+                      value={fileUrl}
+                      onChange={(event) => setFileUrl(event.target.value)}
+                      placeholder="https://..."
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                    />
+                  </div>
+                </div>
+
+                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                  To remove an external link while editing, clear both fields and save.
+                </p>
+              </div>
+
               {formError ? (
                 <FeedbackMessage
                   variant="error"
@@ -270,6 +332,22 @@ export default function ResumesPage() {
                       </button>
                     </div>
                   </div>
+
+                  {resume.fileUrl ? (
+                    <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/70">
+                      <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
+                        {resume.fileName?.trim() ? resume.fileName : 'Resume/CV link'}
+                      </p>
+                      <a
+                        href={resume.fileUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-1 inline-flex text-sm text-slate-700 underline underline-offset-2 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100"
+                      >
+                        Open file
+                      </a>
+                    </div>
+                  ) : null}
 
                   <p className="mt-3 line-clamp-4 whitespace-pre-wrap text-sm text-slate-600 dark:text-slate-300">{resume.content}</p>
                 </article>
