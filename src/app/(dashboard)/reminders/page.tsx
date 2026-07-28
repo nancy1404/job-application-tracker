@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState, type FormEvent } from 'react';
+import { EmptyState } from '@/components/ui/empty-state';
+import { FeedbackMessage } from '@/components/ui/feedback-message';
 
 type Company = {
   id: string;
@@ -126,6 +128,7 @@ export default function RemindersPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [formError, setFormError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [editingReminderId, setEditingReminderId] = useState('');
   const [title, setTitle] = useState('');
   const [dueDate, setDueDate] = useState('');
@@ -144,11 +147,11 @@ export default function RemindersPage() {
       ]);
 
       if (!remindersResponse.ok) {
-        throw new Error('Failed to load reminders.');
+        throw new Error('Could not load reminders.');
       }
 
       if (!applicationsResponse.ok) {
-        throw new Error('Failed to load applications.');
+        throw new Error('Could not load reminders.');
       }
 
       const remindersData = (await remindersResponse.json()) as { reminders: Reminder[] };
@@ -157,7 +160,7 @@ export default function RemindersPage() {
       setReminders(remindersData.reminders ?? []);
       setApplications(applicationsData.applications ?? []);
     } catch (error) {
-      setLoadError(error instanceof Error ? error.message : 'Failed to load reminders.');
+      setLoadError(error instanceof Error ? error.message : 'Could not load reminders.');
     } finally {
       setIsLoading(false);
     }
@@ -194,14 +197,16 @@ export default function RemindersPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError('');
+    setSuccessMessage('');
     setIsSubmitting(true);
 
     try {
       const isEditing = Boolean(editingReminderId);
+      const isCompleting = isEditing && status === 'COMPLETED';
       const parsedDueDate = new Date(dueDate);
 
       if (Number.isNaN(parsedDueDate.getTime())) {
-        throw new Error('Enter a valid reminder date and time.');
+        throw new Error(isCompleting ? 'Could not complete reminder.' : 'Could not save reminder.');
       }
 
       const response = await fetch(isEditing ? `/api/reminders/${editingReminderId}` : '/api/reminders', {
@@ -217,14 +222,22 @@ export default function RemindersPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error ?? 'Failed to save reminder.');
+        throw new Error(isCompleting ? 'Could not complete reminder.' : 'Could not save reminder.');
       }
 
       resetForm();
       await loadData();
+      setSuccessMessage(
+        isCompleting ? 'Reminder completed.' : isEditing ? 'Reminder updated.' : 'Reminder created.'
+      );
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'Failed to save reminder.');
+      setFormError(
+        error instanceof Error
+          ? error.message
+          : editingReminderId && status === 'COMPLETED'
+            ? 'Could not complete reminder.'
+            : 'Could not save reminder.'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -238,6 +251,7 @@ export default function RemindersPage() {
     }
 
     setLoadError('');
+    setSuccessMessage('');
 
     try {
       const response = await fetch(`/api/reminders/${reminderId}`, {
@@ -245,8 +259,7 @@ export default function RemindersPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error ?? 'Failed to delete reminder.');
+        throw new Error('Could not delete reminder.');
       }
 
       if (editingReminderId === reminderId) {
@@ -254,8 +267,9 @@ export default function RemindersPage() {
       }
 
       await loadData();
+      setSuccessMessage('Reminder deleted.');
     } catch (error) {
-      setLoadError(error instanceof Error ? error.message : 'Failed to delete reminder.');
+      setLoadError(error instanceof Error ? error.message : 'Could not delete reminder.');
     }
   }
 
@@ -332,6 +346,16 @@ export default function RemindersPage() {
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Reminders</h1>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Stay on top of follow-ups and deadlines.</p>
         </header>
+
+        {successMessage ? (
+          <FeedbackMessage
+            variant="success"
+            message={successMessage}
+            onDismiss={() => setSuccessMessage('')}
+            autoDismissMs={5000}
+            className="mb-6"
+          />
+        ) : null}
 
         <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
           <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -417,7 +441,14 @@ export default function RemindersPage() {
                 />
               </div>
 
-              {formError ? <p className="text-sm text-red-600">{formError}</p> : null}
+              {formError ? (
+                <FeedbackMessage
+                  variant="error"
+                  title={editingReminderId && status === 'COMPLETED' ? 'Could not complete reminder.' : 'Could not save reminder.'}
+                  message={formError}
+                  onDismiss={() => setFormError('')}
+                />
+              ) : null}
 
               <div className="flex flex-wrap gap-3">
                 <button
@@ -448,17 +479,33 @@ export default function RemindersPage() {
             </div>
 
             {isLoading ? <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">Loading reminders...</p> : null}
-            {loadError ? <p className="mt-4 text-sm text-red-600">{loadError}</p> : null}
+            {loadError ? (
+              <FeedbackMessage
+                variant="error"
+                title="Could not load reminders."
+                message={loadError}
+                onDismiss={() => setLoadError('')}
+                className="mt-4"
+              />
+            ) : null}
 
             {!isLoading && !loadError && reminders.length === 0 ? (
-              <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">No reminders yet.</p>
+              <EmptyState
+                title="No reminders yet"
+                description="Create your first reminder to track deadlines and follow-ups."
+                className="mt-4 p-6"
+              />
             ) : null}
 
             <div className="mt-4 space-y-6">
               <div>
                 <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Overdue</h3>
                 {remindersByTiming.OVERDUE.length === 0 ? (
-                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">No overdue reminders.</p>
+                  <EmptyState
+                    title="No overdue reminders"
+                    description="Any overdue reminders will appear here."
+                    className="mt-2 p-5"
+                  />
                 ) : (
                   <div className="mt-3 space-y-3">{remindersByTiming.OVERDUE.map(renderReminderCard)}</div>
                 )}
@@ -467,7 +514,11 @@ export default function RemindersPage() {
               <div className="border-t border-slate-200 pt-4 dark:border-slate-700">
                 <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Due today</h3>
                 {remindersByTiming.DUE_TODAY.length === 0 ? (
-                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">No reminders due today.</p>
+                  <EmptyState
+                    title="No reminders due today"
+                    description="Reminders due today will appear here."
+                    className="mt-2 p-5"
+                  />
                 ) : (
                   <div className="mt-3 space-y-3">{remindersByTiming.DUE_TODAY.map(renderReminderCard)}</div>
                 )}
@@ -476,7 +527,11 @@ export default function RemindersPage() {
               <div className="border-t border-slate-200 pt-4 dark:border-slate-700">
                 <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Upcoming</h3>
                 {remindersByTiming.UPCOMING.length === 0 ? (
-                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">No upcoming reminders.</p>
+                  <EmptyState
+                    title="No upcoming reminders"
+                    description="Upcoming reminders will appear here."
+                    className="mt-2 p-5"
+                  />
                 ) : (
                   <div className="mt-3 space-y-3">{remindersByTiming.UPCOMING.map(renderReminderCard)}</div>
                 )}
@@ -485,7 +540,11 @@ export default function RemindersPage() {
               <div className="border-t border-slate-200 pt-4 dark:border-slate-700">
                 <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Completed</h3>
                 {remindersByTiming.COMPLETED.length === 0 ? (
-                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">No completed reminders.</p>
+                  <EmptyState
+                    title="No completed reminders"
+                    description="Completed reminders will appear here once finished."
+                    className="mt-2 p-5"
+                  />
                 ) : (
                   <div className="mt-3 space-y-3">{remindersByTiming.COMPLETED.map(renderReminderCard)}</div>
                 )}
