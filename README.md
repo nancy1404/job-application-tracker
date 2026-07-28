@@ -20,19 +20,25 @@ It is designed as a portfolio-ready capstone with strong fundamentals:
 
 - Auth: credential signup/signin with NextAuth v4
 - Opportunities: create/update/delete opportunities in the Applications page
+- Opportunity tracking scope: jobs, internships, research/lab roles, and outreach
 - Opportunity types: Job, Internship, Research/Lab, Other Outreach (with compatibility mapping for legacy values)
 - Status workflow (current stage): INTERESTED, SAVED, APPLIED, INTERVIEW, OFFER
 - Outcome workflow (final/archive): ACTIVE, ACCEPTED, REJECTED, NO_RESPONSE, WITHDRAWN, ARCHIVED
 - Active vs Final sections: split by outcome (not status)
 - Search + filters on opportunities: title/company/contact + type/status/outcome
+- Applications view toggle: card view and spreadsheet-style table view
+- Table view reminder visibility: Next reminder column for each opportunity
 - Dashboard summaries: status, outcomes, reminders, week/month progress metrics, and weekly goal progress
 - Weekly goals: set targets for adding opportunities, applying to opportunities, and completing follow-ups; progress is shown on the dashboard card
+- Reminder notification: dashboard alert with Dismiss and Hide for today behavior
 - Profile page: edit formal display name, preferred name, and personal profile links
 - Dashboard greeting: uses preferred name first when available
 - Resume/CV library: manage resumes and optionally link one resume used per opportunity
+- Resume/CV file links: track external file links only; files are not uploaded to app storage
 - Profile links: save GitHub, LinkedIn, and portfolio URLs
 - Reminders/follow-ups: due tracking with overdue/upcoming visibility
 - Dark mode support across core pages
+- Dashboard shell footer: subtle copyright line
 - Optional AI match insights per opportunity + resume pair
 
 ## Tech Stack
@@ -137,3 +143,7 @@ This capstone demonstrates end-to-end product development with Next.js:
 - production deployment and CI-ready project structure
 
 It highlights building a focused, user-friendly tracking product with optional AI augmentation rather than AI-first dependency.
+
+## Future Work
+
+- Add first-party resume/CV file upload and storage (intentionally deferred in current version to avoid storage/billing risk)

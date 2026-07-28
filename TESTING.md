@@ -131,6 +131,8 @@ Also test reminders linked to opportunities and reminders not linked.
 - [ ] Top reminder alert appears only when overdue or due-today reminders exist
 - [ ] Alert message counts are correct (overdue and due today)
 - [ ] Alert link opens Reminders page
+- [ ] Alert Dismiss hides notification for current session
+- [ ] Alert Hide for today persists through refresh for the same day
 - [ ] Status summary donut shows only workflow statuses:
   - INTERESTED, SAVED, APPLIED, INTERVIEW, OFFER
 - [ ] Donut center count matches active opportunities count
@@ -167,6 +169,14 @@ Also test reminders linked to opportunities and reminders not linked.
 - [ ] Empty filtered result message appears when no matches
 - [ ] Add follow-up reminder action works
 
+## 7.1) Applications Table View Smoke Tests
+
+- [ ] Switch between Cards and Table views without data loss
+- [ ] Search works in both Cards and Table views
+- [ ] Type/status/outcome filters work in both Cards and Table views
+- [ ] Next reminder column shows nearest pending reminder per opportunity
+- [ ] New opportunity flow still works from table mode
+
 ## 8) Resume/CV Page Checks
 
 - [ ] Create resume works
@@ -174,6 +184,13 @@ Also test reminders linked to opportunities and reminders not linked.
 - [ ] Delete resume works
 - [ ] Default resume behavior is correct
 - [ ] Resume can be selected as "Resume/CV used" on opportunities
+
+## 8.1) External Resume/CV Link Smoke Tests
+
+- [ ] Create resume without external file link
+- [ ] Create resume with external file link
+- [ ] Open file action opens external link in a new tab
+- [ ] Clear/remove an existing external file link and save successfully
 
 ## 9) Profile Page Checks
 
@@ -195,6 +212,11 @@ Also test reminders linked to opportunities and reminders not linked.
 - [ ] Linked opportunity info displays when present
 - [ ] Timing labels are correct (overdue, due today, upcoming, completed)
 - [ ] Sorting/visibility feels correct for pending vs completed
+
+## 10.1) Message Consistency Checks
+
+- [ ] Success messages appear after create/update/complete/delete actions and auto-dismiss
+- [ ] Error messages appear on failed actions and do not auto-dismiss
 
 ## 11) Dark Mode Checks
 
