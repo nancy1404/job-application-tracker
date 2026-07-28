@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { EmptyState } from '@/components/ui/empty-state';
+import { FeedbackMessage } from '@/components/ui/feedback-message';
 
 type Company = {
   id: string;
@@ -183,6 +185,7 @@ export default function ApplicationsPage() {
   const [generatingApplicationId, setGeneratingApplicationId] = useState('');
   const [loadError, setLoadError] = useState('');
   const [formError, setFormError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [aiErrors, setAiErrors] = useState<Record<string, string>>({});
   const [editingApplicationId, setEditingApplicationId] = useState('');
   const [title, setTitle] = useState('');
@@ -227,19 +230,19 @@ export default function ApplicationsPage() {
       ]);
 
       if (!applicationsResponse.ok) {
-        throw new Error('Failed to load applications.');
+        throw new Error('Could not load opportunities.');
       }
 
       if (!companiesResponse.ok) {
-        throw new Error('Failed to load companies.');
+        throw new Error('Could not load opportunities.');
       }
 
       if (!resumesResponse.ok) {
-        throw new Error('Failed to load resumes.');
+        throw new Error('Could not load opportunities.');
       }
 
       if (!remindersResponse.ok) {
-        throw new Error('Failed to load reminders.');
+        throw new Error('Could not load opportunities.');
       }
 
       const applicationsData = (await applicationsResponse.json()) as { applications: Application[] };
@@ -271,7 +274,7 @@ export default function ApplicationsPage() {
         });
       }
     } catch (error) {
-      setLoadError(error instanceof Error ? error.message : 'Failed to load applications.');
+      setLoadError(error instanceof Error ? error.message : 'Could not load opportunities.');
     } finally {
       setIsLoading(false);
     }
@@ -431,6 +434,7 @@ export default function ApplicationsPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError('');
+    setSuccessMessage('');
     setIsSubmitting(true);
 
     try {
@@ -465,8 +469,7 @@ export default function ApplicationsPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error ?? 'Failed to create application.');
+        throw new Error('Could not save opportunity.');
       }
 
       setTitle('');
@@ -486,8 +489,9 @@ export default function ApplicationsPage() {
       setEditingApplicationId('');
 
       await loadData();
+      setSuccessMessage(isEditing ? 'Opportunity updated.' : 'Opportunity created.');
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'Failed to save application.');
+      setFormError(error instanceof Error ? error.message : 'Could not save opportunity.');
     } finally {
       setIsSubmitting(false);
     }
@@ -501,6 +505,7 @@ export default function ApplicationsPage() {
     }
 
     setLoadError('');
+    setSuccessMessage('');
 
     try {
       const response = await fetch(`/api/applications/${applicationId}`, {
@@ -508,8 +513,7 @@ export default function ApplicationsPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error ?? 'Failed to delete application.');
+        throw new Error('Could not delete opportunity.');
       }
 
       if (editingApplicationId === applicationId) {
@@ -517,8 +521,9 @@ export default function ApplicationsPage() {
       }
 
       await loadData();
+      setSuccessMessage('Opportunity deleted.');
     } catch (error) {
-      setLoadError(error instanceof Error ? error.message : 'Failed to delete application.');
+      setLoadError(error instanceof Error ? error.message : 'Could not delete opportunity.');
     }
   }
 
@@ -550,7 +555,7 @@ export default function ApplicationsPage() {
       );
 
       if (!dueDate) {
-        throw new Error('Select a valid custom date and time for the follow-up reminder.');
+        throw new Error('Could not create follow-up reminder.');
       }
 
       const response = await fetch('/api/reminders', {
@@ -567,17 +572,18 @@ export default function ApplicationsPage() {
       const responseData = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(responseData.error ?? 'Failed to create reminder.');
+        throw new Error('Could not create follow-up reminder.');
       }
 
       setReminderMessages((currentMessages) => ({
         ...currentMessages,
-        [application.id]: 'Follow-up reminder added.',
+        [application.id]: 'Follow-up reminder created.',
       }));
+      setSuccessMessage('Follow-up reminder created.');
     } catch (error) {
       setReminderMessages((currentMessages) => ({
         ...currentMessages,
-        [application.id]: error instanceof Error ? error.message : 'Failed to create reminder.',
+        [application.id]: error instanceof Error ? error.message : 'Could not create follow-up reminder.',
       }));
     } finally {
       setCreatingReminderForId('');
@@ -793,11 +799,19 @@ export default function ApplicationsPage() {
         </div>
 
         {reminderMessages[application.id] ? (
-          <p
-            className={`mt-2 text-sm ${reminderMessages[application.id] === 'Follow-up reminder added.' ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}
-          >
-            {reminderMessages[application.id]}
-          </p>
+          <FeedbackMessage
+            variant={reminderMessages[application.id] === 'Follow-up reminder created.' ? 'success' : 'error'}
+            message={reminderMessages[application.id]}
+            onDismiss={() =>
+              setReminderMessages((currentMessages) => {
+                const nextMessages = { ...currentMessages };
+                delete nextMessages[application.id];
+                return nextMessages;
+              })
+            }
+            autoDismissMs={reminderMessages[application.id] === 'Follow-up reminder created.' ? 5000 : undefined}
+            className="mt-2"
+          />
         ) : null}
 
         <dl className="mt-3 space-y-1 text-sm text-slate-600 dark:text-slate-300">
@@ -1004,11 +1018,19 @@ export default function ApplicationsPage() {
             </button>
           </div>
           {reminderMessages[application.id] ? (
-            <p
-              className={`mt-2 text-xs ${reminderMessages[application.id] === 'Follow-up reminder added.' ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}
-            >
-              {reminderMessages[application.id]}
-            </p>
+            <FeedbackMessage
+              variant={reminderMessages[application.id] === 'Follow-up reminder created.' ? 'success' : 'error'}
+              message={reminderMessages[application.id]}
+              onDismiss={() =>
+                setReminderMessages((currentMessages) => {
+                  const nextMessages = { ...currentMessages };
+                  delete nextMessages[application.id];
+                  return nextMessages;
+                })
+              }
+              autoDismissMs={reminderMessages[application.id] === 'Follow-up reminder created.' ? 5000 : undefined}
+              className="mt-2"
+            />
           ) : null}
         </td>
       </tr>
@@ -1022,6 +1044,16 @@ export default function ApplicationsPage() {
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Opportunities</h1>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Track applications, outreach, and follow-ups in one place.</p>
         </header>
+
+        {successMessage ? (
+          <FeedbackMessage
+            variant="success"
+            message={successMessage}
+            onDismiss={() => setSuccessMessage('')}
+            autoDismissMs={5000}
+            className="mb-6"
+          />
+        ) : null}
 
         <div className={viewMode === 'card' ? 'grid gap-8 lg:grid-cols-[1.1fr_0.9fr]' : 'space-y-6'}>
           {viewMode === 'card' ? (
@@ -1252,7 +1284,14 @@ export default function ApplicationsPage() {
                 />
               </div>
 
-              {formError ? <p className="text-sm text-red-600">{formError}</p> : null}
+              {formError ? (
+                <FeedbackMessage
+                  variant="error"
+                  title="Could not save opportunity."
+                  message={formError}
+                  onDismiss={() => setFormError('')}
+                />
+              ) : null}
 
               <button
                 type="submit"
@@ -1403,16 +1442,30 @@ export default function ApplicationsPage() {
             </div>
 
             {isLoading ? <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">Loading opportunities...</p> : null}
-            {loadError ? <p className="mt-4 text-sm text-red-600">{loadError}</p> : null}
+            {loadError ? (
+              <FeedbackMessage
+                variant="error"
+                title="Could not load opportunities."
+                message={loadError}
+                onDismiss={() => setLoadError('')}
+                className="mt-4"
+              />
+            ) : null}
 
             {!isLoading && !loadError && applications.length === 0 ? (
-              <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">No opportunities yet.</p>
+              <EmptyState
+                title="No opportunities yet"
+                description="Create your first opportunity to start tracking applications and outreach."
+                className="mt-4 p-6"
+              />
             ) : null}
 
             {!isLoading && !loadError && applications.length > 0 && filteredApplications.length === 0 ? (
-              <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">
-                No opportunities match your current search or filters.
-              </p>
+              <EmptyState
+                title="No matches found"
+                description="No opportunities match your current search or filters."
+                className="mt-4 p-6"
+              />
             ) : null}
 
             <div className="mt-4 space-y-6">
@@ -1422,7 +1475,11 @@ export default function ApplicationsPage() {
                   Opportunities where outcome is ACTIVE.
                 </p>
                 {activeApplications.length === 0 ? (
-                  <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">No active opportunities.</p>
+                  <EmptyState
+                    title="No active opportunities"
+                    description="Active opportunities will appear here when outcome is ACTIVE."
+                    className="mt-3 p-6"
+                  />
                 ) : viewMode === 'card' ? (
                   <div className="mt-3 space-y-3">{activeApplications.map(renderOpportunityCard)}</div>
                 ) : (
@@ -1452,7 +1509,11 @@ export default function ApplicationsPage() {
                   Outcomes: ACCEPTED, REJECTED, NO_RESPONSE, WITHDRAWN, ARCHIVED.
                 </p>
                 {archivedApplications.length === 0 ? (
-                  <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">No archived or final-outcome opportunities yet.</p>
+                  <EmptyState
+                    title="No archived or final opportunities"
+                    description="Archived and final-outcome opportunities will appear here."
+                    className="mt-3 p-6"
+                  />
                 ) : viewMode === 'card' ? (
                   <div className="mt-3 space-y-3">{archivedApplications.map(renderOpportunityCard)}</div>
                 ) : (
